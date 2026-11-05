@@ -179,13 +179,16 @@ def compute_crowding_distance(front):
         front[i]["crowding"] = de + ds
 
 
-def compute_hypervolume(pareto_front, ref_energy=500.0, ref_satisfaction=0.0):
+def compute_hypervolume(pareto_front, ref_energy=None, ref_satisfaction=0.0):
     """
     Computes normalized 2D Hypervolume (HV) indicator against reference point.
-    Higher HV proves superior multi-objective convergence + diversity.
+    Adapts reference energy dynamically so HV is never 0.00 on benchmark datasets.
     """
     if not pareto_front:
         return 0.0
+    max_e = max(p["energy"] for p in pareto_front)
+    if ref_energy is None or ref_energy <= max_e:
+        ref_energy = max(950.0, max_e * 1.35)
     sorted_pf = sorted(pareto_front, key=lambda x: x["energy"])
     hv_area = 0.0
     prev_sat = ref_satisfaction
@@ -326,7 +329,27 @@ def run_hybrid_nsga2(
         unvisited.remove(nxt)
     population.append(evaluate_fleet_route(route_u, depot, stops, max_capacity, fuzzy_kernel, traffic_multiplier))
 
-    # 5. Fill remainder with randomized permutations
+    # 5. Heuristic Constructive Sampling (Swarm-informed seeds)
+    s_map = {s["id"]: s for s in stops}
+    for _ in range(4):
+        unvisited_set = set(base_ids)
+        curr_node = rng.choice(base_ids)
+        ant_r = [curr_node]
+        unvisited_set.remove(curr_node)
+        while unvisited_set:
+            cx_n, cy_n = s_map[curr_node]["x"], s_map[curr_node]["y"]
+            def aco_prob(nxt):
+                nx, ny = s_map[nxt]["x"], s_map[nxt]["y"]
+                d = max(1.0, math.hypot(nx - cx_n, ny - cy_n))
+                urg = 100.0 / max(10.0, s_map[nxt]["best_end"])
+                return (1.0 / d) * (1.0 + 0.45 * urg)
+            nxt_id = max(unvisited_set, key=aco_prob)
+            ant_r.append(nxt_id)
+            unvisited_set.remove(nxt_id)
+            curr_node = nxt_id
+        population.append(evaluate_fleet_route(ant_r, depot, stops, max_capacity, fuzzy_kernel, traffic_multiplier))
+
+    # 6. Fill remainder with randomized permutations
     while len(population) < pop_size:
         perm = list(base_ids)
         rng.shuffle(perm)
@@ -635,6 +658,14 @@ def run_full_benchmark_suite(
     sga_res   = run_standard_single_ga(depot, stops, max_capacity, pop_size, generations, fuzzy_kernel, traffic_mult, seed=42)
     greedy_sol = run_greedy_nearest_neighbor(depot, stops, max_capacity, fuzzy_kernel, traffic_mult)
 
+    # Calculate uniform adaptive reference energy across all evaluated Pareto fronts
+    all_energies = [sol["energy"] for alg in [nsga2_res, mopso_res, moaco_res, sga_res] for sol in alg["pareto_front"]]
+    shared_ref = max(950.0, max(all_energies) * 1.35)
+    nsga2_res["hypervolume"] = compute_hypervolume(nsga2_res["pareto_front"], ref_energy=shared_ref)
+    mopso_res["hypervolume"] = compute_hypervolume(mopso_res["pareto_front"], ref_energy=shared_ref)
+    moaco_res["hypervolume"] = compute_hypervolume(moaco_res["pareto_front"], ref_energy=shared_ref)
+    sga_res["hypervolume"]   = compute_hypervolume(sga_res["pareto_front"], ref_energy=shared_ref)
+
     return {
         "depot": depot,
         "stops": stops,
@@ -675,29 +706,33 @@ def run_multi_trial_statistics(
         res_nsga2 = run_hybrid_nsga2(depot, stops, max_capacity, pop_size=36, generations=35, fuzzy_kernel=fuzzy_kernel, traffic_multiplier=traffic_mult, seed=seed)
         algos["Hybrid Fuzzy-NSGA-II (Proposed)"]["energy"].append(res_nsga2["best_balanced"]["energy"])
         algos["Hybrid Fuzzy-NSGA-II (Proposed)"]["satisfaction"].append(res_nsga2["best_balanced"]["satisfaction"])
-        algos["Hybrid Fuzzy-NSGA-II (Proposed)"]["hypervolume"].append(res_nsga2["hypervolume"])
         algos["Hybrid Fuzzy-NSGA-II (Proposed)"]["runtime_ms"].append(res_nsga2["runtime_ms"])
 
         # MOPSO
         res_mopso = run_mopso(depot, stops, max_capacity, pop_size=36, generations=35, fuzzy_kernel=fuzzy_kernel, traffic_multiplier=traffic_mult, seed=seed)
         algos["Multi-Objective PSO (MOPSO)"]["energy"].append(res_mopso["best_balanced"]["energy"])
         algos["Multi-Objective PSO (MOPSO)"]["satisfaction"].append(res_mopso["best_balanced"]["satisfaction"])
-        algos["Multi-Objective PSO (MOPSO)"]["hypervolume"].append(res_mopso["hypervolume"])
         algos["Multi-Objective PSO (MOPSO)"]["runtime_ms"].append(res_mopso["runtime_ms"])
 
         # MO-ACO
         res_moaco = run_moaco(depot, stops, max_capacity, pop_size=28, generations=35, fuzzy_kernel=fuzzy_kernel, traffic_multiplier=traffic_mult, seed=seed)
         algos["Multi-Objective ACO (MO-ACO)"]["energy"].append(res_moaco["best_balanced"]["energy"])
         algos["Multi-Objective ACO (MO-ACO)"]["satisfaction"].append(res_moaco["best_balanced"]["satisfaction"])
-        algos["Multi-Objective ACO (MO-ACO)"]["hypervolume"].append(res_moaco["hypervolume"])
         algos["Multi-Objective ACO (MO-ACO)"]["runtime_ms"].append(res_moaco["runtime_ms"])
 
         # SGA
         res_sga = run_standard_single_ga(depot, stops, max_capacity, pop_size=36, generations=35, fuzzy_kernel=fuzzy_kernel, traffic_multiplier=traffic_mult, seed=seed)
         algos["Standard Single-Objective GA"]["energy"].append(res_sga["best_balanced"]["energy"])
         algos["Standard Single-Objective GA"]["satisfaction"].append(res_sga["best_balanced"]["satisfaction"])
-        algos["Standard Single-Objective GA"]["hypervolume"].append(res_sga["hypervolume"])
         algos["Standard Single-Objective GA"]["runtime_ms"].append(res_sga["runtime_ms"])
+
+        # Uniform adaptive hypervolume across all algorithms for this trial
+        all_e = [sol["energy"] for alg_res in [res_nsga2, res_mopso, res_moaco, res_sga] for sol in alg_res["pareto_front"]]
+        shared_ref = max(950.0, max(all_e) * 1.35)
+        algos["Hybrid Fuzzy-NSGA-II (Proposed)"]["hypervolume"].append(compute_hypervolume(res_nsga2["pareto_front"], ref_energy=shared_ref))
+        algos["Multi-Objective PSO (MOPSO)"]["hypervolume"].append(compute_hypervolume(res_mopso["pareto_front"], ref_energy=shared_ref))
+        algos["Multi-Objective ACO (MO-ACO)"]["hypervolume"].append(compute_hypervolume(res_moaco["pareto_front"], ref_energy=shared_ref))
+        algos["Standard Single-Objective GA"]["hypervolume"].append(compute_hypervolume(res_sga["pareto_front"], ref_energy=shared_ref))
 
     def calc_mean_std(arr):
         mean = sum(arr) / len(arr)
