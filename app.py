@@ -316,19 +316,32 @@ render_animated_hud(
 # =====================================================================
 def render_cyberpunk_radar(depot, van_schedules, speed_mult=3):
     palette = ["#38bdf8", "#10b981", "#f43f5e", "#a855f7", "#f59e0b", "#06b6d4", "#ec4899"]
-    all_x = [depot["x"]] + [s["x"] for v in van_schedules for s in v["stops"]]
-    all_y = [depot["y"]] + [s["y"] for v in van_schedules for s in v["stops"]]
-    min_x, max_x = min(all_x) - 5, max(all_x) + 5
-    min_y, max_y = min(all_y) - 5, max(all_y) + 5
 
+    # Radial de-clutter transform so inner-city stops near the depot spread out cleanly
+    def spread_coord(x, y):
+        dx = x - depot["x"]
+        dy = y - depot["y"]
+        r = np.hypot(dx, dy)
+        if r < 1e-4:
+            return x, y
+        # Boost short distances (power 0.72) so central nodes don't bunch up
+        r_spread = (r ** 0.72) * 2.35
+        scale = r_spread / r
+        return round(depot["x"] + dx * scale, 2), round(depot["y"] + dy * scale, 2)
+
+    all_x, all_y = [depot["x"]], [depot["y"]]
     routes_payload = []
+
     for idx, van in enumerate(van_schedules):
         pts = [{"x": depot["x"], "y": depot["y"], "label": "CENTRAL HUB", "sat": 100, "weight": 0, "eta": 0}]
         for s in van["stops"]:
+            sx, sy = spread_coord(s["x"], s["y"])
+            all_x.append(sx)
+            all_y.append(sy)
             pts.append({
-                "x": s["x"],
-                "y": s["y"],
-                "label": f"#{s['stop_id']} {s['name'][:15]}",
+                "x": sx,
+                "y": sy,
+                "label": f"#{s['stop_id']} {s['name'][:20]}",
                 "sat": s["satisfaction"],
                 "weight": s["weight"],
                 "eta": s["arrival_min"],
@@ -342,6 +355,9 @@ def render_cyberpunk_radar(depot, van_schedules, speed_mult=3):
             "util": van["utilization_pct"],
             "points": pts
         })
+
+    min_x, max_x = min(all_x) - 4, max(all_x) + 4
+    min_y, max_y = min(all_y) - 4, max(all_y) + 4
 
     data_json = json.dumps({
         "depot": {"x": depot["x"], "y": depot["y"], "name": depot["name"]},
@@ -359,24 +375,25 @@ def render_cyberpunk_radar(depot, van_schedules, speed_mult=3):
         body {{ background: transparent; color: #f8fafc; overflow: hidden; }}
         .radar-shell {{
             background: #060a14;
-            border: 1px solid rgba(56, 189, 248, 0.4);
-            border-radius: 14px;
-            padding: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.65);
+            border: 1px solid rgba(56, 189, 248, 0.45);
+            border-radius: 16px;
+            padding: 14px 18px;
+            box-shadow: 0 12px 36px rgba(0,0,0,0.75);
         }}
         .top-bar {{
             display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 10px; padding-bottom: 8px;
-            border-bottom: 1px solid rgba(148,163,184,0.15);
+            margin-bottom: 10px; padding-bottom: 10px;
+            border-bottom: 1px solid rgba(148,163,184,0.18);
+            flex-wrap: wrap; gap: 8px;
         }}
-        .btn-group {{ display: flex; gap: 6px; flex-wrap: wrap; }}
+        .btn-group {{ display: flex; gap: 7px; flex-wrap: wrap; align-items: center; }}
         .hud-btn {{
-            background: rgba(15, 23, 42, 0.9);
-            border: 1px solid rgba(56, 189, 248, 0.35);
+            background: rgba(15, 23, 42, 0.92);
+            border: 1px solid rgba(56, 189, 248, 0.4);
             color: #e2e8f0;
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 11px;
+            padding: 6px 12px;
+            border-radius: 7px;
+            font-size: 12px;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.2s;
@@ -385,35 +402,47 @@ def render_cyberpunk_radar(depot, van_schedules, speed_mult=3):
             background: #0284c7;
             border-color: #38bdf8;
             color: #ffffff;
+            box-shadow: 0 0 12px rgba(56,189,248,0.45);
         }}
         .ticker-bar {{
-            margin-top: 8px;
-            background: rgba(15, 23, 42, 0.85);
-            border: 1px solid rgba(56, 189, 248, 0.25);
+            margin-top: 10px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(56, 189, 248, 0.3);
             border-radius: 8px;
-            padding: 6px 12px;
-            font-size: 11.5px;
+            padding: 8px 14px;
+            font-size: 13px;
             color: #38bdf8;
             display: flex;
             justify-content: space-between;
             font-family: monospace;
         }}
+        #cyberCanvas {{
+            width: 100%;
+            height: 640px;
+            border-radius: 12px;
+            cursor: grab;
+            background: radial-gradient(circle at center, #0b152e 0%, #04070f 100%);
+        }}
+        #cyberCanvas:active {{ cursor: grabbing; }}
     </style>
     </head>
     <body>
     <div class="radar-shell">
         <div class="top-bar">
-            <div style="font-size:13px; font-weight:800; color:#38bdf8; letter-spacing:0.5px;">
-                🛰️ INTERACTIVE 60FPS VECTOR RADAR — AUTONOMOUS FLEET & PARTICLE TELEMETRY
+            <div style="font-size:15px; font-weight:800; color:#38bdf8; letter-spacing:0.6px;">
+                🛰️ WIDESCREEN 60FPS VECTOR RADAR — SCROLL TO ZOOM • DRAG TO PAN
             </div>
             <div class="btn-group" id="vanFilterBtns">
+                <button class="hud-btn" onclick="adjustZoom(1.25)">➕ ZOOM IN</button>
+                <button class="hud-btn" onclick="adjustZoom(0.8)">➖ ZOOM OUT</button>
+                <button class="hud-btn" onclick="resetCamera()">🎯 RESET VIEW</button>
                 <button class="hud-btn active" onclick="setFilter(-1, this)">ALL VANS</button>
                 <button class="hud-btn" onclick="togglePause(this)">⏸️ PAUSE</button>
             </div>
         </div>
-        <canvas id="cyberCanvas" width="860" height="445" style="width:100%; height:445px; border-radius:10px; background: radial-gradient(circle at center, #0a1329 0%, #04070f 100%);"></canvas>
+        <canvas id="cyberCanvas" width="1440" height="640"></canvas>
         <div class="ticker-bar">
-            <span id="liveTicker">⚡ TELEMETRY STREAM: Initializing multi-vehicle vector paths...</span>
+            <span id="liveTicker">⚡ TELEMETRY STREAM: Initializing widescreen vector paths...</span>
             <span id="simClock" style="color:#34d399; font-weight:700;">SIM CLOCK: T+00.0m</span>
         </div>
     </div>
@@ -426,9 +455,31 @@ def render_cyberpunk_radar(depot, van_schedules, speed_mult=3):
     let radarAngle = 0;
     let paused = false;
     let activeVan = -1;
+    let zoom = 1.05;
+    let panX = 0, panY = 0;
+    let isDragging = false, lastX = 0, lastY = 0;
     const particles = [];
 
-    // Dynamically create van filter buttons
+    // Mouse Wheel Zoom & Drag Pan
+    canvas.addEventListener('wheel', (e) => {{
+        e.preventDefault();
+        const factor = e.deltaY < 0 ? 1.12 : 0.89;
+        zoom = Math.min(3.5, Math.max(0.65, zoom * factor));
+    }});
+    canvas.addEventListener('mousedown', (e) => {{
+        isDragging = true; lastX = e.clientX; lastY = e.clientY;
+    }});
+    window.addEventListener('mouseup', () => isDragging = false);
+    window.addEventListener('mousemove', (e) => {{
+        if (!isDragging) return;
+        panX += (e.clientX - lastX) * 1.3;
+        panY += (e.clientY - lastY) * 1.3;
+        lastX = e.clientX; lastY = e.clientY;
+    }});
+
+    function adjustZoom(f) {{ zoom = Math.min(3.5, Math.max(0.65, zoom * f)); }}
+    function resetCamera() {{ zoom = 1.05; panX = 0; panY = 0; }}
+
     const btnContainer = document.getElementById('vanFilterBtns');
     data.routes.forEach((r, idx) => {{
         const b = document.createElement('button');
@@ -442,7 +493,9 @@ def render_cyberpunk_radar(depot, van_schedules, speed_mult=3):
     function setFilter(idx, btnEl) {{
         activeVan = idx;
         document.querySelectorAll('#vanFilterBtns .hud-btn').forEach(b => {{
-            if (b.innerText !== '⏸️ PAUSE' && b.innerText !== '▶️ RESUME') b.classList.remove('active');
+            if (!['⏸️ PAUSE','▶️ RESUME','➕ ZOOM IN','➖ ZOOM OUT','🎯 RESET VIEW'].includes(b.innerText)) {{
+                b.classList.remove('active');
+            }}
         }});
         btnEl.classList.add('active');
     }}
@@ -453,12 +506,14 @@ def render_cyberpunk_radar(depot, van_schedules, speed_mult=3):
     }}
 
     function mapX(x) {{
-        const pad = 52;
-        return pad + ((x - data.bounds.minX) / Math.max(1e-5, data.bounds.maxX - data.bounds.minX)) * (canvas.width - 2 * pad);
+        const pad = 95;
+        const base = pad + ((x - data.bounds.minX) / Math.max(1e-5, data.bounds.maxX - data.bounds.minX)) * (canvas.width - 2 * pad);
+        return (base - canvas.width / 2) * zoom + canvas.width / 2 + panX;
     }}
     function mapY(y) {{
-        const pad = 44;
-        return canvas.height - pad - ((y - data.bounds.minY) / Math.max(1e-5, data.bounds.maxY - data.bounds.minY)) * (canvas.height - 2 * pad);
+        const pad = 70;
+        const base = canvas.height - pad - ((y - data.bounds.minY) / Math.max(1e-5, data.bounds.maxY - data.bounds.minY)) * (canvas.height - 2 * pad);
+        return (base - canvas.height / 2) * zoom + canvas.height / 2 + panY;
     }}
 
     function render() {{
@@ -466,21 +521,22 @@ def render_cyberpunk_radar(depot, van_schedules, speed_mult=3):
         const dx = mapX(data.depot.x);
         const dy = mapY(data.depot.y);
 
-        // 1. Cybernetic hex/polar grid
+        // 1. Cybernetic background grid
         ctx.strokeStyle = 'rgba(56, 189, 248, 0.06)';
         ctx.lineWidth = 1;
-        for (let x = 0; x < canvas.width; x += 42) {{
+        for (let x = 0; x < canvas.width; x += 55) {{
             ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
         }}
-        for (let y = 0; y < canvas.height; y += 42) {{
+        for (let y = 0; y < canvas.height; y += 55) {{
             ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
         }}
 
-        // Concentric range rings around Central Hub
-        [75, 150, 225, 300].forEach(r => {{
+        // Concentric radar distance rings
+        [110, 220, 340, 470, 600].forEach(r => {{
             ctx.beginPath();
-            ctx.arc(dx, dy, r, 0, Math.PI * 2);
-            ctx.strokeStyle = 'rgba(56, 189, 248, 0.10)';
+            ctx.arc(dx, dy, r * zoom, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.11)';
+            ctx.lineWidth = 1.2;
             ctx.stroke();
         }});
 
@@ -489,16 +545,16 @@ def render_cyberpunk_radar(depot, van_schedules, speed_mult=3):
         ctx.translate(dx, dy);
         ctx.rotate(radarAngle);
         const sweepGrad = ctx.createConicGradient(0, 0, 0);
-        sweepGrad.addColorStop(0, 'rgba(56, 189, 248, 0.22)');
+        sweepGrad.addColorStop(0, 'rgba(56, 189, 248, 0.24)');
         sweepGrad.addColorStop(0.12, 'rgba(56, 189, 248, 0.0)');
         sweepGrad.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
         ctx.fillStyle = sweepGrad;
         ctx.beginPath();
-        ctx.arc(0, 0, 380, 0, Math.PI * 2);
+        ctx.arc(0, 0, 650 * zoom, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
 
-        // 3. Draw Routes, Nodes & Directional Moving Vans
+        // 3. Draw Routes, Nodes & Bigger Directional Moving Vans
         data.routes.forEach((route, rIdx) => {{
             if (activeVan !== -1 && activeVan !== rIdx) return;
             const pts = route.points;
@@ -513,34 +569,42 @@ def render_cyberpunk_radar(depot, van_schedules, speed_mult=3):
             }}
             ctx.strokeStyle = route.color;
             ctx.shadowColor = route.color;
-            ctx.shadowBlur = 10;
-            ctx.globalAlpha = 0.55;
-            ctx.lineWidth = 2.4;
+            ctx.shadowBlur = 14;
+            ctx.globalAlpha = 0.65;
+            ctx.lineWidth = 3.2;
             ctx.stroke();
             ctx.restore();
 
-            // Draw Delivery Stop Nodes with SLA ring
+            // Draw Customer Nodes with alternating label offsets so text never collides
             for (let i = 1; i < pts.length - 1; i++) {{
                 const sx = mapX(pts[i].x);
                 const sy = mapY(pts[i].y);
 
-                // Node outer ring
+                // Node SLA status outer ring
                 ctx.beginPath();
-                ctx.arc(sx, sy, 8, 0, Math.PI * 2);
+                ctx.arc(sx, sy, 11, 0, Math.PI * 2);
                 ctx.strokeStyle = pts[i].sat >= 80 ? '#10b981' : (pts[i].sat >= 50 ? '#f59e0b' : '#f43f5e');
-                ctx.lineWidth = 1.8;
+                ctx.lineWidth = 2.4;
                 ctx.stroke();
 
-                // Node core
+                // Node inner core
                 ctx.beginPath();
-                ctx.arc(sx, sy, 4.5, 0, Math.PI * 2);
+                ctx.arc(sx, sy, 6.5, 0, Math.PI * 2);
                 ctx.fillStyle = route.color;
                 ctx.fill();
 
-                // Label
-                ctx.fillStyle = '#e2e8f0';
-                ctx.font = '600 10px sans-serif';
-                ctx.fillText(pts[i].label, sx + 10, sy + 3);
+                // Smart label pill background for crisp readability
+                const labelText = pts[i].label;
+                ctx.font = 'bold 13px sans-serif';
+                const textW = ctx.measureText(labelText).width;
+                const offsetY = (i % 2 === 0) ? -16 : 22;
+                ctx.fillStyle = 'rgba(6, 10, 20, 0.82)';
+                ctx.beginPath();
+                ctx.roundRect(sx + 12, sy + offsetY - 12, textW + 10, 18, 4);
+                ctx.fill();
+
+                ctx.fillStyle = '#f8fafc';
+                ctx.fillText(labelText, sx + 17, sy + offsetY + 1);
             }}
 
             // Calculate Moving Van Position & Heading Angle
@@ -557,54 +621,49 @@ def render_cyberpunk_radar(depot, van_schedules, speed_mult=3):
             const vy = ay + (by - ay) * segFrac;
             const angle = Math.atan2(by - ay, bx - ax);
 
-            // Spawn exhaust trail particles
-            if (!paused && Math.random() < 0.65) {{
+            if (!paused && Math.random() < 0.75) {{
                 particles.push({{
                     x: vx, y: vy,
-                    r: 3.2,
-                    alpha: 0.85,
+                    r: 4.5,
+                    alpha: 0.9,
                     color: route.color
                 }});
             }}
 
-            // Update ticker when close to a node
             if (segFrac > 0.88 && pB.label !== 'CENTRAL HUB') {{
                 document.getElementById('liveTicker').innerText =
                     `⚡ [${{route.van_id}} | Load ${{route.load}}] Docking at ${{pB.label}} — ETA: ${{pB.eta}}m | Fuzzy SLA: ${{pB.sat}}%`;
             }}
 
-            // Draw Directional Autonomous Vehicle + Headlight Cone
+            // Draw Larger Directional Autonomous Vehicle + Headlight Cone
             ctx.save();
             ctx.translate(vx, vy);
             ctx.rotate(angle);
 
-            // Headlight beam cone
-            const beam = ctx.createLinearGradient(0, 0, 34, 0);
-            beam.addColorStop(0, 'rgba(255, 255, 255, 0.45)');
+            const beam = ctx.createLinearGradient(0, 0, 48, 0);
+            beam.addColorStop(0, 'rgba(255, 255, 255, 0.55)');
             beam.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
             ctx.fillStyle = beam;
             ctx.beginPath();
-            ctx.moveTo(6, 0);
-            ctx.lineTo(34, -11);
-            ctx.lineTo(34, 11);
+            ctx.moveTo(8, 0);
+            ctx.lineTo(48, -16);
+            ctx.lineTo(48, 16);
             ctx.closePath();
             ctx.fill();
 
-            // Vehicle chassis (futuristic capsule/arrow)
             ctx.fillStyle = '#ffffff';
             ctx.strokeStyle = route.color;
-            ctx.lineWidth = 2.5;
+            ctx.lineWidth = 3.2;
             ctx.beginPath();
-            ctx.roundRect(-8, -5, 16, 10, 3);
+            ctx.roundRect(-11, -7, 22, 14, 4);
             ctx.fill();
             ctx.stroke();
-
             ctx.restore();
 
             // Floating HUD Callout above Van
             ctx.fillStyle = route.color;
-            ctx.font = 'bold 10px sans-serif';
-            ctx.fillText(`${{route.van_id}} (${{route.util}}%)`, vx - 24, vy - 12);
+            ctx.font = 'bold 13px sans-serif';
+            ctx.fillText(`${{route.van_id}} (${{route.util}}%)`, vx - 30, vy - 16);
         }});
 
         // 4. Render & Decay Particle Trails
@@ -616,31 +675,31 @@ def render_cyberpunk_radar(depot, van_schedules, speed_mult=3):
             ctx.globalAlpha = pt.alpha;
             ctx.fill();
             ctx.globalAlpha = 1.0;
-            pt.alpha -= 0.035;
+            pt.alpha -= 0.032;
             pt.r *= 0.96;
             if (pt.alpha <= 0.02) particles.splice(i, 1);
         }}
 
-        // 5. Central Depot Core
+        // 5. Large Central Depot Core
         ctx.save();
         ctx.beginPath();
-        ctx.arc(dx, dy, 11, 0, Math.PI * 2);
+        ctx.arc(dx, dy, 16, 0, Math.PI * 2);
         ctx.fillStyle = '#f59e0b';
         ctx.shadowColor = '#f59e0b';
-        ctx.shadowBlur = 18;
+        ctx.shadowBlur = 24;
         ctx.fill();
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2.5;
+        ctx.lineWidth = 3.5;
         ctx.stroke();
         ctx.restore();
 
         ctx.fillStyle = '#fde047';
-        ctx.font = 'bold 11px sans-serif';
-        ctx.fillText('★ CENTRAL HUB', dx - 40, dy + 24);
+        ctx.font = 'bold 14px sans-serif';
+        ctx.fillText('★ CENTRAL HUB', dx - 52, dy + 34);
 
         if (!paused) {{
-            progress += 0.0011 * data.speed;
-            radarAngle += 0.022;
+            progress += 0.0010 * data.speed;
+            radarAngle += 0.020;
             const simMin = ((progress % 1.0) * 65.0).toFixed(1);
             document.getElementById('simClock').innerText = `SIM CLOCK: T+${{simMin}}m`;
         }}
@@ -651,7 +710,7 @@ def render_cyberpunk_radar(depot, van_schedules, speed_mult=3):
     </body>
     </html>
     """
-    components.html(radar_html, height=535)
+    components.html(radar_html, height=745)
 
 
 # =====================================================================
@@ -876,26 +935,28 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 # TAB 1: 60FPS CYBERPUNK RADAR + VEHICLE PAYLOAD TELEMETRY
 # ---------------------------------------------------------------------
 with tab1:
-    col_radar, col_vans = st.columns([1.68, 1.0])
+    # Full-width Widescreen 60FPS Radar on top
+    render_cyberpunk_radar(suite["depot"], best_sol["van_schedules"], speed_mult=sim_speed)
 
-    with col_radar:
-        render_cyberpunk_radar(suite["depot"], best_sol["van_schedules"], speed_mult=sim_speed)
+    # Side-by-side Fleet Telemetry Table & Utilization Chart below
+    col_vtable, col_vchart = st.columns([1.25, 1.0])
+    van_df = pd.DataFrame([
+        {
+            "Vehicle": v["van_id"],
+            "Payload": f"{v['load_kg']}/{v['capacity_kg']} kg",
+            "Utilization %": v["utilization_pct"],
+            "Distance (km)": v["distance_km"],
+            "Energy": v["energy_units"],
+            "Route Sequence": " → ".join([f"#{s['stop_id']}" for s in v["stops"]])
+        }
+        for v in best_sol["van_schedules"]
+    ])
 
-    with col_vans:
+    with col_vtable:
         st.markdown("#### 🚐 Active Fleet Telemetry & Payload Balance")
-        van_df = pd.DataFrame([
-            {
-                "Vehicle": v["van_id"],
-                "Payload": f"{v['load_kg']}/{v['capacity_kg']} kg",
-                "Utilization %": v["utilization_pct"],
-                "Distance (km)": v["distance_km"],
-                "Energy": v["energy_units"],
-                "Route Sequence": " → ".join([f"#{s['stop_id']}" for s in v["stops"]])
-            }
-            for v in best_sol["van_schedules"]
-        ])
         st.dataframe(van_df, use_container_width=True, hide_index=True)
 
+    with col_vchart:
         fig_util = px.bar(
             van_df,
             x="Vehicle",
@@ -907,7 +968,7 @@ with tab1:
             template="plotly_dark"
         )
         fig_util.update_layout(
-            height=255,
+            height=265,
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="rgba(0,0,0,0)",
             margin=dict(l=15, r=15, t=35, b=15)
