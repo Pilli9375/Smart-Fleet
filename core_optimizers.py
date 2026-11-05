@@ -288,24 +288,87 @@ def run_hybrid_nsga2(
     t0 = time.perf_counter()
 
     population = []
-    # Seed 1 greedy solution + random permutations
-    for i in range(pop_size):
+
+    # 1. Urgency-Sorted (Earliest Deadline First) chromosome
+    urgency_route = [s["id"] for s in sorted(stops, key=lambda s: (s["best_end"], s["max_late"]))]
+    population.append(evaluate_fleet_route(urgency_route, depot, stops, max_capacity, fuzzy_kernel, traffic_multiplier))
+
+    # 2. Spatial-Urgency Hybrid chromosome (0.5 * distance + 0.5 * best_end)
+    def spatial_urgency_score(s):
+        d = math.hypot(s["x"] - depot["x"], s["y"] - depot["y"])
+        return 0.5 * d + 0.5 * s["best_end"]
+    spatial_urgency_route = [s["id"] for s in sorted(stops, key=spatial_urgency_score)]
+    population.append(evaluate_fleet_route(spatial_urgency_route, depot, stops, max_capacity, fuzzy_kernel, traffic_multiplier))
+
+    # 3. Greedy Nearest-Neighbor chromosome
+    greedy_sol = run_greedy_nearest_neighbor(depot, stops, max_capacity, fuzzy_kernel, traffic_multiplier)
+    population.append(greedy_sol)
+
+    # 4. Urgency-Guided Nearest-Neighbor chromosome
+    unvisited = [dict(s) for s in stops]
+    route_u = []
+    cx, cy, c_time, c_load = depot["x"], depot["y"], 0.0, 0
+    while unvisited:
+        feas = [s for s in unvisited if c_load + s["weight"] <= max_capacity]
+        if not feas:
+            cx, cy, c_time, c_load = depot["x"], depot["y"], 0.0, 0
+            feas = unvisited
+        def u_cost(s):
+            d = math.hypot(s["x"] - cx, s["y"] - cy)
+            lateness = max(0.0, c_time + d - s["best_end"])
+            return d + 1.8 * lateness
+        nxt = min(feas, key=u_cost)
+        route_u.append(nxt["id"])
+        c_load += nxt["weight"]
+        d = math.hypot(nxt["x"] - cx, nxt["y"] - cy)
+        c_time += d * traffic_multiplier * 0.85 + 1.5
+        cx, cy = nxt["x"], nxt["y"]
+        unvisited.remove(nxt)
+    population.append(evaluate_fleet_route(route_u, depot, stops, max_capacity, fuzzy_kernel, traffic_multiplier))
+
+    # 5. Fill remainder with randomized permutations
+    while len(population) < pop_size:
         perm = list(base_ids)
         rng.shuffle(perm)
         population.append(evaluate_fleet_route(perm, depot, stops, max_capacity, fuzzy_kernel, traffic_multiplier))
 
-    initial_random = dict(population[0])
+    initial_random = dict(population[4]) if len(population) > 4 else dict(population[0])
+    archive = get_pareto_front(population)
     history = []
+
+    def select_parent(p_list):
+        i1, i2 = rng.sample(range(len(p_list)), 2)
+        p1, p2 = p_list[i1], p_list[i2]
+        if dominates(p1, p2): return p1
+        if dominates(p2, p1): return p2
+        return p1 if p1.get("crowding", 0.0) >= p2.get("crowding", 0.0) else p2
 
     for gen in range(generations):
         offspring = []
+        compute_crowding_distance(population)
         while len(offspring) < pop_size:
-            p1, p2 = rng.sample(population, 2)
-            c_route = order_crossover(p1["route"], p2["route"], rng)
+            pa = select_parent(population)
+            pb = select_parent(population)
+            c_route = order_crossover(pa["route"], pb["route"], rng)
             c_route = mutate_route(c_route, mutation_rate, rng)
             offspring.append(evaluate_fleet_route(c_route, depot, stops, max_capacity, fuzzy_kernel, traffic_multiplier))
 
+        # 2-opt refinement on top candidate offspring
+        for ind in offspring[:8]:
+            r = list(ind["route"])
+            for _ in range(5):
+                i, j = sorted(rng.sample(range(len(r)), 2))
+                cand_r = list(r)
+                cand_r[i:j+1] = reversed(cand_r[i:j+1])
+                c_eval = evaluate_fleet_route(cand_r, depot, stops, max_capacity, fuzzy_kernel, traffic_multiplier)
+                if dominates(c_eval, ind):
+                    offspring.append(c_eval)
+                    ind = c_eval
+
         combined = population + offspring
+        # Update external elitist Pareto archive
+        archive = get_pareto_front(archive + combined)[:pop_size * 2]
+
         # Fast Non-Dominated Sorting into fronts
         remaining = list(combined)
         new_pop = []
@@ -322,18 +385,32 @@ def run_hybrid_nsga2(
                     remaining.remove(item)
 
         population = new_pop
-        pf = get_pareto_front(population)
+        pf = get_pareto_front(population + archive)
         best_bal = select_best_balanced(pf)
         history.append({
             "gen": gen + 1,
-            "best_energy": min(p["energy"] for p in population),
-            "best_satisfaction": max(p["satisfaction"] for p in population),
+            "best_energy": min(p["energy"] for p in pf),
+            "best_satisfaction": max(p["satisfaction"] for p in pf),
             "balanced_energy": best_bal["energy"],
             "balanced_satisfaction": best_bal["satisfaction"]
         })
 
+    # Final 2-opt refinement on archive to explore Pareto boundary
+    refined_archive = []
+    for elite in archive:
+        r = list(elite["route"])
+        for _ in range(12):
+            i, j = sorted(rng.sample(range(len(r)), 2))
+            cand_r = list(r)
+            cand_r[i:j+1] = reversed(cand_r[i:j+1])
+            c_eval = evaluate_fleet_route(cand_r, depot, stops, max_capacity, fuzzy_kernel, traffic_multiplier)
+            if dominates(c_eval, elite):
+                refined_archive.append(c_eval)
+                elite = c_eval
+    archive = get_pareto_front(archive + refined_archive)
+
     runtime_ms = round((time.perf_counter() - t0) * 1000.0, 1)
-    pareto_front = get_pareto_front(population)
+    pareto_front = get_pareto_front(population + archive)
     best_balanced = select_best_balanced(pareto_front)
 
     return {
@@ -569,6 +646,80 @@ def run_full_benchmark_suite(
         "sga": sga_res,
         "greedy": greedy_sol
     }
+
+
+def run_multi_trial_statistics(
+    dataset_name="Amaravati-Vijayawada Live GPS (25 Stops)",
+    num_stops=18,
+    max_capacity=100,
+    trials=5,
+    fuzzy_kernel="Trapezoidal"
+):
+    """
+    Executes multiple independent random seed trials (seed = 100 + t) across algorithms
+    to compute Mean and Standard Deviation for statistical rigor in faculty reviews.
+    """
+    depot, stops = get_dataset(dataset_name, num_stops=num_stops)
+    traffic_mult, _ = get_fuzzy_traffic_factor("Medium Traffic", "Clear Weather")
+
+    algos = {
+        "Hybrid Fuzzy-NSGA-II (Proposed)": {"energy": [], "satisfaction": [], "hypervolume": [], "runtime_ms": []},
+        "Multi-Objective PSO (MOPSO)": {"energy": [], "satisfaction": [], "hypervolume": [], "runtime_ms": []},
+        "Multi-Objective ACO (MO-ACO)": {"energy": [], "satisfaction": [], "hypervolume": [], "runtime_ms": []},
+        "Standard Single-Objective GA": {"energy": [], "satisfaction": [], "hypervolume": [], "runtime_ms": []}
+    }
+
+    for t in range(trials):
+        seed = 100 + t
+        # NSGA-II
+        res_nsga2 = run_hybrid_nsga2(depot, stops, max_capacity, pop_size=36, generations=35, fuzzy_kernel=fuzzy_kernel, traffic_multiplier=traffic_mult, seed=seed)
+        algos["Hybrid Fuzzy-NSGA-II (Proposed)"]["energy"].append(res_nsga2["best_balanced"]["energy"])
+        algos["Hybrid Fuzzy-NSGA-II (Proposed)"]["satisfaction"].append(res_nsga2["best_balanced"]["satisfaction"])
+        algos["Hybrid Fuzzy-NSGA-II (Proposed)"]["hypervolume"].append(res_nsga2["hypervolume"])
+        algos["Hybrid Fuzzy-NSGA-II (Proposed)"]["runtime_ms"].append(res_nsga2["runtime_ms"])
+
+        # MOPSO
+        res_mopso = run_mopso(depot, stops, max_capacity, pop_size=36, generations=35, fuzzy_kernel=fuzzy_kernel, traffic_multiplier=traffic_mult, seed=seed)
+        algos["Multi-Objective PSO (MOPSO)"]["energy"].append(res_mopso["best_balanced"]["energy"])
+        algos["Multi-Objective PSO (MOPSO)"]["satisfaction"].append(res_mopso["best_balanced"]["satisfaction"])
+        algos["Multi-Objective PSO (MOPSO)"]["hypervolume"].append(res_mopso["hypervolume"])
+        algos["Multi-Objective PSO (MOPSO)"]["runtime_ms"].append(res_mopso["runtime_ms"])
+
+        # MO-ACO
+        res_moaco = run_moaco(depot, stops, max_capacity, pop_size=28, generations=35, fuzzy_kernel=fuzzy_kernel, traffic_multiplier=traffic_mult, seed=seed)
+        algos["Multi-Objective ACO (MO-ACO)"]["energy"].append(res_moaco["best_balanced"]["energy"])
+        algos["Multi-Objective ACO (MO-ACO)"]["satisfaction"].append(res_moaco["best_balanced"]["satisfaction"])
+        algos["Multi-Objective ACO (MO-ACO)"]["hypervolume"].append(res_moaco["hypervolume"])
+        algos["Multi-Objective ACO (MO-ACO)"]["runtime_ms"].append(res_moaco["runtime_ms"])
+
+        # SGA
+        res_sga = run_standard_single_ga(depot, stops, max_capacity, pop_size=36, generations=35, fuzzy_kernel=fuzzy_kernel, traffic_multiplier=traffic_mult, seed=seed)
+        algos["Standard Single-Objective GA"]["energy"].append(res_sga["best_balanced"]["energy"])
+        algos["Standard Single-Objective GA"]["satisfaction"].append(res_sga["best_balanced"]["satisfaction"])
+        algos["Standard Single-Objective GA"]["hypervolume"].append(res_sga["hypervolume"])
+        algos["Standard Single-Objective GA"]["runtime_ms"].append(res_sga["runtime_ms"])
+
+    def calc_mean_std(arr):
+        mean = sum(arr) / len(arr)
+        variance = sum((x - mean) ** 2 for x in arr) / max(1, len(arr) - 1)
+        std = math.sqrt(variance)
+        return mean, std
+
+    report = []
+    for name, metrics in algos.items():
+        m_e, s_e = calc_mean_std(metrics["energy"])
+        m_s, s_s = calc_mean_std(metrics["satisfaction"])
+        m_hv, s_hv = calc_mean_std(metrics["hypervolume"])
+        m_rt, s_rt = calc_mean_std(metrics["runtime_ms"])
+        report.append({
+            "Algorithm": name,
+            "Energy Cost (Mean ± Std)": f"{m_e:.2f} ± {s_e:.2f}",
+            "Fuzzy Satisfaction % (Mean ± Std)": f"{m_s:.2f} ± {s_s:.2f}%",
+            "Hypervolume HV (Mean ± Std)": f"{m_hv:.2f} ± {s_hv:.2f}",
+            "Runtime ms (Mean ± Std)": f"{m_rt:.1f} ± {s_rt:.1f} ms"
+        })
+
+    return report
 
 
 if __name__ == "__main__":
