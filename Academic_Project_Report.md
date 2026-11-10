@@ -6,6 +6,10 @@
 **Academic Document Type:** Comprehensive Project & Research Benchmark Report  
 **Target Publication:** *"A Hybrid Mamdani-Fuzzy and Memetic NSGA-II Framework for Load-Dependent Multi-Objective Urban Fleet Dispatching"* (Target: IEEE / MDPI Systems)  
 
+### 👥 Research Team Details
+- **V Naga Adithya** — `23BCE9062`
+- **M Karthik** — `23BCE9659`  
+
 ---
 
 ## Executive Abstract

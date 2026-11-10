@@ -8,6 +8,10 @@
 
 A **Soft Computing Research and Enterprise Logistics Dispatch Suite** combining **Multi-Kernel Fuzzy Logic Customer Satisfaction**, **Mamdani Traffic & Weather Inference**, and an **Enhanced Hybrid NSGA-II Multi-Objective Evolutionary Algorithm** benchmarked against **MOPSO**, **MO-ACO**, **Standard GA**, and **Greedy Nearest-Neighbor Heuristics**.
 
+### 👥 Project Team Members
+- **V Naga Adithya** — `23BCE9062`
+- **M Karthik** — `23BCE9659`
+
 ---
 
 ## 📌 1. Project Overview & Architecture
