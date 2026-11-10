@@ -31,8 +31,6 @@ st.set_page_config(
 # PRECISION DESIGN SYSTEM CSS (LINEAR / VERCEL / SAMSARA INSPIRED)
 # =====================================================================
 DESIGN_SYSTEM_CSS = """<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
-
 :root {
 --bg-base: #09090b;
 --bg-surface: #121215;
@@ -513,7 +511,6 @@ def render_precision_topology_canvas(depot, van_schedules, speed_mult=3):
     <!DOCTYPE html>
     <html>
     <head>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         * {{ box-sizing: border-box; margin: 0; padding: 0; }}
         body {{ background: transparent; color: #fafafa; font-family: 'Inter', sans-serif; overflow: hidden; }}
