@@ -17,12 +17,13 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml import parse_xml
 from docx.oxml.ns import nsdecls
+from PIL import Image as PILImage
 
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.lib.units import inch
 from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, HRFlowable
+    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, HRFlowable, Image as RLImage
 )
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.pdfgen import canvas
@@ -94,7 +95,11 @@ def replace_fractions(text):
 
 
 def clean_latex_basic(text):
-    """Low-level regex substitutions for math symbols, Greek letters, sub/superscripts."""
+    """
+    Substitutions for math symbols, Greek letters, and indices.
+    CRITICAL: Uses standard ASCII subscripts (f1, f2, 10^25, kg^-1) so standard PDF fonts
+    never drop Unicode subscripts as empty boxes or garbled text!
+    """
     rules = [
         # Parentheses & Brackets (Must run before symbol replacements)
         (r"\\left\(", "("),
@@ -111,43 +116,43 @@ def clean_latex_basic(text):
         (r"\\big\)", ")"),
         (r"\\Big\(", "("),
         (r"\\Big\)", ")"),
-        (r"\\langle", "⟨"),
-        (r"\\rangle", "⟩"),
+        (r"\\langle", "<"),
+        (r"\\rangle", ">"),
 
         # Relational and Math Symbols (with lookaheads to prevent matching English words)
-        (r"\\approx", "≈"),
-        (r"\\times", "×"),
-        (r"\\cdot", "·"),
-        (r"\\pm", "±"),
-        (r"\\div", "÷"),
-        (r"\\le(?![a-zA-Z])", "≤"),
-        (r"\\ge(?![a-zA-Z])", "≥"),
-        (r"\\ne(?![a-zA-Z])", "≠"),
-        (r"\\in(?![a-zA-Z])", "∈"),
-        (r"\\forall(?![a-zA-Z])", "∀"),
-        (r"\\exists(?![a-zA-Z])", "∃"),
-        (r"\\land(?![a-zA-Z])", "∧"),
-        (r"\\lor(?![a-zA-Z])", "∨"),
-        (r"\\prec_n", "≺_n"),
-        (r"\\prec(?![a-zA-Z])", "≺"),
-        (r"\\infty", "∞"),
-        (r"\\mu(?![a-zA-Z])", "μ"),
-        (r"\\tau(?![a-zA-Z])", "τ"),
-        (r"\\sigma(?![a-zA-Z])", "σ"),
-        (r"\\gamma(?![a-zA-Z])", "γ"),
-        (r"\\alpha(?![a-zA-Z])", "α"),
-        (r"\\beta(?![a-zA-Z])", "β"),
-        (r"\\eta(?![a-zA-Z])", "η"),
-        (r"\\pi(?![a-zA-Z])", "π"),
-        (r"\\Omega(?![a-zA-Z])", "Ω"),
-        (r"\\Delta(?![a-zA-Z])", "Δ"),
-        (r"\\Sigma(?![a-zA-Z])", "∑"),
+        (r"\\approx", "~"),
+        (r"\\times", "x"),
+        (r"\\cdot", "*"),
+        (r"\\pm", "+/-"),
+        (r"\\div", "/"),
+        (r"\\le(?![a-zA-Z])", "<="),
+        (r"\\ge(?![a-zA-Z])", ">="),
+        (r"\\ne(?![a-zA-Z])", "!="),
+        (r"\\in(?![a-zA-Z])", " in "),
+        (r"\\forall(?![a-zA-Z])", "for all "),
+        (r"\\exists(?![a-zA-Z])", "exists "),
+        (r"\\land(?![a-zA-Z])", " and "),
+        (r"\\lor(?![a-zA-Z])", " or "),
+        (r"\\prec_n", "pref_n"),
+        (r"\\prec(?![a-zA-Z])", "<"),
+        (r"\\infty", "infinity"),
+        (r"\\mu(?![a-zA-Z])", "mu"),
+        (r"\\tau(?![a-zA-Z])", "tau"),
+        (r"\\sigma(?![a-zA-Z])", "sigma"),
+        (r"\\gamma(?![a-zA-Z])", "gamma"),
+        (r"\\alpha(?![a-zA-Z])", "alpha"),
+        (r"\\beta(?![a-zA-Z])", "beta"),
+        (r"\\eta(?![a-zA-Z])", "eta"),
+        (r"\\pi(?![a-zA-Z])", "pi"),
+        (r"\\Omega(?![a-zA-Z])", "Omega"),
+        (r"\\Delta(?![a-zA-Z])", "Delta"),
+        (r"\\Sigma(?![a-zA-Z])", "sum"),
 
         # Geographic degree coordinates
-        (r"\^\\circ\s*\\text\{N\}", "°N"),
-        (r"\^\\circ\s*\\text\{E\}", "°E"),
-        (r"\^\\circ", "°"),
-        (r"\\circ", "°"),
+        (r"\^\\circ\s*\\text\{N\}", " deg N"),
+        (r"\^\\circ\s*\\text\{E\}", " deg E"),
+        (r"\^\\circ", " deg"),
+        (r"\\circ", " deg"),
 
         # Spacing
         (r"\\quad", "   "),
@@ -156,44 +161,55 @@ def clean_latex_basic(text):
         (r"\\!", ""),
 
         # Calculus and Summations
-        (r"\\sum_\{k=1\}\^K", "∑(k=1..K)"),
-        (r"\\sum_\{j=0\}\^\{m_k\}", "∑(j=0..m_k)"),
-        (r"\\sum_\{i=1\}\^N", "∑(i=1..N)"),
-        (r"\\sum_\{i=1\}\^\{m_k\}", "∑(i=1..m_k)"),
-        (r"\\sum_\{i \\in R_k\}", "∑(i ∈ R_k)"),
-        (r"\\sum", "∑"),
-        (r"\\int", "∫"),
-        (r"\\sqrt", "√"),
+        (r"\\sum_\{k=1\}\^K", "sum(k=1..K)"),
+        (r"\\sum_\{j=0\}\^\{m_k\}", "sum(j=0..m_k)"),
+        (r"\\sum_\{i=1\}\^N", "sum(i=1..N)"),
+        (r"\\sum_\{i=1\}\^\{m_k\}", "sum(i=1..m_k)"),
+        (r"\\sum_\{i \\in R_k\}", "sum(i in R_k)"),
+        (r"\\sum", "sum"),
+        (r"\\int", "integral"),
+        (r"\\sqrt", "sqrt"),
         (r"\\max_\{r=1\}\^9", "max(r=1..9)"),
         (r"\\min(?![a-zA-Z])", "min"),
         (r"\\max(?![a-zA-Z])", "max"),
         (r"\\exp(?![a-zA-Z])", "exp"),
 
-        # Subscripts & Superscripts
-        (r"f_1\^\{\\?min\}", "f₁_min"),
-        (r"f_1\^\\?min", "f₁_min"),
-        (r"f_1\^\{\\?max\}", "f₁_max"),
-        (r"f_1\^\\?max", "f₁_max"),
-        (r"f_2\^\{\\?min\}", "f₂_min"),
-        (r"f_2\^\\?min", "f₂_min"),
-        (r"f_2\^\{\\?max\}", "f₂_max"),
-        (r"f_2\^\\?max", "f₂_max"),
-        (r"f_1\^\{\\text\{ref\}\}", "f₁_ref"),
-        (r"f_2\^\{\\text\{ref\}\}", "f₂_ref"),
-        (r"f_1", "f₁"),
-        (r"f_2", "f₂"),
-        (r"10\^\{25\}", "10²⁵"),
-        (r"10\^8", "10⁸"),
-        (r"10\^9", "10⁹"),
-        (r"\^\{-1\}", "⁻¹"),
-        (r"\^-1\b", "⁻¹"),
-        (r"\^2\b", "²"),
-        (r"\^3\b", "³"),
-        (r"\^4\b", "⁴"),
-        (r"\^5\b", "⁵"),
+        # CRITICAL: Multi-Objective Subscripts and Superscripts in pure ASCII
+        (r"f_1\^\{\\?min\}", "f1_min"),
+        (r"f_1\^\\?min", "f1_min"),
+        (r"f_1\^\{\\?max\}", "f1_max"),
+        (r"f_1\^\\?max", "f1_max"),
+        (r"f_2\^\{\\?min\}", "f2_min"),
+        (r"f_2\^\\?min", "f2_min"),
+        (r"f_2\^\{\\?max\}", "f2_max"),
+        (r"f_2\^\\?max", "f2_max"),
+        (r"f_1\^\{\\text\{ref\}\}", "f1_ref"),
+        (r"f_2\^\{\\text\{ref\}\}", "f2_ref"),
+        (r"f_1", "f1"),
+        (r"f_2", "f2"),
+        (r"f₁", "f1"),
+        (r"f₂", "f2"),
+        (r"10\^\{25\}", "10^25"),
+        (r"10\^8", "10^8"),
+        (r"10\^9", "10^9"),
+        (r"10²⁵", "10^25"),
+        (r"10⁸", "10^8"),
+        (r"10⁹", "10^9"),
+        (r"\^\{-1\}", "^-1"),
+        (r"\^-1\b", "^-1"),
+        (r"⁻¹", "^-1"),
+        (r"\^2\b", "^2"),
+        (r"\^3\b", "^3"),
+        (r"\^4\b", "^4"),
+        (r"\^5\b", "^5"),
+        (r"²", "^2"),
+        (r"³", "^3"),
+        (r"PM_\{2\.5\}", "PM2.5"),
+        (r"PM_2\.5", "PM2.5"),
+        (r"NO_x", "NOx"),
 
         # Text wrappers and formatting
-        (r"\\text\{([^}]+)\}", r"\1"),
+        (r"\\text\{([^}]+)\}", r" \1 "),
         (r"\\mathcal\{F\}_(\d+)", r"F_\1"),
         (r"\\mathcal\{P\}", "P"),
         (r"\\dots", "..."),
@@ -204,11 +220,13 @@ def clean_latex_basic(text):
     res = text
     for pat, rep in rules:
         res = re.sub(pat, rep, res)
+    # Collapse multiple spaces
+    res = re.sub(r"[ \t]+", " ", res)
     return res.strip()
 
 
 def clean_latex(text):
-    """Converts LaTeX math notation and piecewise cases to clean, legible academic unicode typography."""
+    """Converts LaTeX math notation and piecewise cases to clean, legible academic ASCII typography."""
     if not text:
         return ""
     
@@ -292,8 +310,9 @@ def format_markdown_for_pdf(text):
 def parse_markdown_blocks(md_content):
     """
     Parses Markdown lines into structured blocks:
-    headers, paragraphs, bullet lists, numbered lists (preserving explicit numbering),
+    headers, paragraphs, images, equations, bullet lists, numbered lists,
     blockquotes, tables, and code blocks.
+    Completely filters out raw Mermaid diagrams.
     """
     lines = md_content.splitlines()
     blocks = []
@@ -315,7 +334,36 @@ def parse_markdown_blocks(md_content):
             i += 1
             continue
 
-        # Code block
+        # Image block ![caption](path)
+        m_img = re.match(r"^!\[(.*?)\]\((.*?)\)", stripped)
+        if m_img:
+            blocks.append({
+                "type": "image",
+                "caption": m_img.group(1),
+                "path": m_img.group(2)
+            })
+            i += 1
+            continue
+
+        # Display Equation $$ ... $$ (Priority check to prevent leaking into paragraphs)
+        if stripped.startswith("$$"):
+            if stripped.endswith("$$") and len(stripped) > 4:
+                blocks.append({"type": "equation", "text": clean_latex(stripped[2:-2])})
+                i += 1
+                continue
+            else:
+                eq_lines = [stripped[2:]]
+                i += 1
+                while i < n and not lines[i].strip().endswith("$$"):
+                    eq_lines.append(lines[i].strip())
+                    i += 1
+                if i < n:
+                    eq_lines.append(lines[i].strip()[:-2])
+                    i += 1
+                blocks.append({"type": "equation", "text": clean_latex(" ".join(eq_lines))})
+                continue
+
+        # Code block (Skips raw Mermaid code blocks completely)
         if stripped.startswith("```"):
             code_lines = []
             is_mermaid = "mermaid" in stripped
@@ -324,11 +372,11 @@ def parse_markdown_blocks(md_content):
                 code_lines.append(lines[i])
                 i += 1
             i += 1  # Skip closing ```
-            blocks.append({
-                "type": "code",
-                "is_mermaid": is_mermaid,
-                "content": "\n".join(code_lines)
-            })
+            if not is_mermaid:
+                blocks.append({
+                    "type": "code",
+                    "content": "\n".join(code_lines)
+                })
             continue
 
         # Table block
@@ -337,7 +385,6 @@ def parse_markdown_blocks(md_content):
             while i < n and lines[i].strip().startswith("|") and lines[i].strip().endswith("|"):
                 table_lines.append(lines[i].strip())
                 i += 1
-            # Parse table rows
             rows = []
             for tl in table_lines:
                 if re.match(r"^\|(\s*:?-+:?\s*\|)+$", tl):
@@ -388,13 +435,13 @@ def parse_markdown_blocks(md_content):
             blocks.append({"type": "blockquote", "text": " ".join(quote_lines)})
             continue
 
-        # Standard Paragraph or Equation block
+        # Standard Paragraph (Breaks before images, equations, and lists)
         para_lines = []
         while i < n:
             curr_str = lines[i].strip()
             if not curr_str:
                 break
-            if curr_str.startswith(("#", "```", ">", "---", "***")):
+            if curr_str.startswith(("#", "```", ">", "---", "***", "![", "$$")):
                 break
             if curr_str.startswith(("- ", "* ")) or re.match(r"^\d+\.\s+", curr_str):
                 break
@@ -405,10 +452,7 @@ def parse_markdown_blocks(md_content):
 
         if para_lines:
             full_p = " ".join(para_lines).strip()
-            if full_p.startswith("$$") and full_p.endswith("$$") and len(full_p) >= 4:
-                blocks.append({"type": "equation", "text": clean_latex(full_p[2:-2])})
-            else:
-                blocks.append({"type": "paragraph", "text": full_p})
+            blocks.append({"type": "paragraph", "text": full_p})
         else:
             i += 1
 
@@ -437,6 +481,20 @@ def set_cell_margins(cell, top=100, bottom=100, left=150, right=150):
         f'</w:tcMar>'
     )
     tcPr.append(tcMar)
+
+
+def set_cell_border(cell, top="CBD5E1", bottom="CBD5E1", left="CBD5E1", right="CBD5E1", sz="4"):
+    """Sets explicit 4-sided borders on a Word table cell to prevent row merging."""
+    tcPr = cell._tc.get_or_add_tcPr()
+    tcBorders = parse_xml(
+        f'<w:tcBorders {nsdecls("w")}>'
+        f'<w:top w:val="single" w:sz="{sz}" w:space="0" w:color="{top}"/>'
+        f'<w:left w:val="single" w:sz="{sz}" w:space="0" w:color="{left}"/>'
+        f'<w:bottom w:val="single" w:sz="{sz}" w:space="0" w:color="{bottom}"/>'
+        f'<w:right w:val="single" w:sz="{sz}" w:space="0" w:color="{right}"/>'
+        f'</w:tcBorders>'
+    )
+    tcPr.append(tcBorders)
 
 
 def set_callout_box_borders(cell, border_color="0284C7"):
@@ -487,7 +545,7 @@ def add_formatted_text(paragraph, text, base_font="Calibri", base_size=11, color
             clean_math = clean_latex(token).replace("`", "")
             run.text = clean_math
             run.italic = True
-            run.font.name = "Cambria Math"
+            run.font.name = "Consolas"
             run.font.color.rgb = RGBColor(14, 116, 144)
         else:
             run.text = clean_latex(token).replace("`", "")
@@ -580,6 +638,8 @@ def generate_docx(blocks, output_path):
         bg = "F1F5F9" if idx % 2 == 0 else "FFFFFF"
         set_cell_background(cell_lbl, bg)
         set_cell_background(cell_val, bg)
+        set_cell_border(cell_lbl, top="CBD5E1", bottom="CBD5E1", left="CBD5E1", right="CBD5E1")
+        set_cell_border(cell_val, top="CBD5E1", bottom="CBD5E1", left="CBD5E1", right="CBD5E1")
 
     doc.add_page_break()
 
@@ -645,8 +705,19 @@ def generate_docx(blocks, output_path):
             p.paragraph_format.line_spacing = 1.15
             add_formatted_text(p, block["text"])
 
+        elif btype == "image":
+            img_rel = block["path"]
+            img_full = os.path.join(os.path.dirname(__file__), img_rel)
+            if os.path.exists(img_full):
+                p_sp = doc.add_paragraph()
+                p_sp.paragraph_format.space_before = Pt(6)
+                p_img = doc.add_paragraph()
+                p_img.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                p_img.paragraph_format.space_before = Pt(4)
+                p_img.paragraph_format.space_after = Pt(2)
+                p_img.add_run().add_picture(img_full, width=Inches(6.0))
+
         elif btype == "equation":
-            # Elegant single-cell callout box for mathematical equations
             tbl_eq = doc.add_table(rows=1, cols=1)
             tbl_eq.alignment = WD_TABLE_ALIGNMENT.CENTER
             tbl_eq.autofit = False
@@ -664,8 +735,8 @@ def generate_docx(blocks, output_path):
                 p_eq.paragraph_format.line_spacing = 1.12
                 r_eq = p_eq.add_run(line_eq)
                 r_eq.bold = True
-                r_eq.font.name = "Consolas" if ("•" in line_eq or "=" in line_eq) else "Cambria Math"
-                r_eq.font.size = Pt(10)
+                r_eq.font.name = "Consolas"
+                r_eq.font.size = Pt(9.5)
                 r_eq.font.color.rgb = RGBColor(12, 74, 110)
 
             sp_after = doc.add_paragraph()
@@ -680,7 +751,6 @@ def generate_docx(blocks, output_path):
                 add_formatted_text(bp, it)
 
         elif btype == "numbered_list":
-            # Explicit paragraph numbering prevents Word List Number reset bug
             for it in block["items"]:
                 np = doc.add_paragraph()
                 np.paragraph_format.left_indent = Inches(0.25)
@@ -710,6 +780,7 @@ def generate_docx(blocks, output_path):
             tbl = doc.add_table(rows=num_rows, cols=num_cols)
             tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
             tbl.autofit = True
+            tbl.style = 'Table Grid'
 
             for r_idx, r_data in enumerate(rows_data):
                 is_header = (r_idx == 0)
@@ -738,6 +809,7 @@ def generate_docx(blocks, output_path):
                         set_cell_background(cell, bg)
 
                     set_cell_margins(cell, 70, 70, 100, 100)
+                    set_cell_border(cell, top="CBD5E1", bottom="CBD5E1", left="CBD5E1", right="CBD5E1")
 
             post_sp = doc.add_paragraph()
             post_sp.paragraph_format.space_after = Pt(8)
@@ -747,8 +819,7 @@ def generate_docx(blocks, output_path):
             cp.paragraph_format.space_before = Pt(4)
             cp.paragraph_format.space_after = Pt(6)
             cp.paragraph_format.left_indent = Inches(0.2)
-            tag_title = "[System Architecture Flow]\n" if block["is_mermaid"] else "[Script Execution Code]\n"
-            run_tag = cp.add_run(tag_title)
+            run_tag = cp.add_run("[Script Execution Code]\n")
             run_tag.bold = True
             run_tag.font.size = Pt(9)
             run_tag.font.color.rgb = RGBColor(14, 116, 144)
@@ -886,6 +957,16 @@ def generate_pdf(blocks, output_path):
         spaceAfter=3
     ))
     styles.add(ParagraphStyle(
+        name="FigureCaption",
+        fontName="Helvetica-Oblique",
+        fontSize=8.2,
+        leading=11,
+        alignment=1,
+        textColor=colors.HexColor("#475569"),
+        spaceBefore=3,
+        spaceAfter=8
+    ))
+    styles.add(ParagraphStyle(
         name="TableHeader",
         fontName="Helvetica-Bold",
         fontSize=8,
@@ -992,10 +1073,31 @@ def generate_pdf(blocks, output_path):
 
         elif btype == "paragraph":
             txt_clean = format_markdown_for_pdf(block["text"])
-            story.append(Paragraph(txt_clean, styles["AcademicBody"]))
+            # Format figure caption paragraphs
+            if txt_clean.startswith("<i>Figure ") and txt_clean.endswith("</i>"):
+                story.append(Paragraph(txt_clean, styles["FigureCaption"]))
+            else:
+                story.append(Paragraph(txt_clean, styles["AcademicBody"]))
+
+        elif btype == "image":
+            img_rel = block["path"]
+            img_full = os.path.join(os.path.dirname(__file__), img_rel)
+            if os.path.exists(img_full):
+                with PILImage.open(img_full) as pimg:
+                    w_orig, h_orig = pimg.size
+                avail_w = 490.0
+                calc_h = avail_w * (h_orig / w_orig)
+                if calc_h > 260.0:
+                    calc_h = 260.0
+                    avail_w = calc_h * (w_orig / h_orig)
+
+                story.append(Spacer(1, 6))
+                rl_img = RLImage(img_full, width=avail_w, height=calc_h)
+                rl_img.hAlign = 'CENTER'
+                story.append(rl_img)
+                story.append(Spacer(1, 3))
 
         elif btype == "equation":
-            # Multi-line styled callout box for equations with zero [Equation] tag
             eq_text = block["text"]
             eq_lines = eq_text.split("\n")
             flowables = []
@@ -1054,16 +1156,18 @@ def generate_pdf(blocks, output_path):
                 col_widths = [504.0 / max(1, col_count)] * col_count
 
             t = Table(table_flow_data, colWidths=col_widths)
+            # CRITICAL: ROWBACKGROUNDS first, GRID and LINEBELOW drawn ON TOP so dividing lines are crisp!
             t.setStyle(TableStyle([
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.HexColor("#ffffff"), colors.HexColor("#f8fafc")]),
                 ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#0f172a")),
                 ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                 ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
                 ('TOPPADDING', (0, 0), (-1, -1), 4),
                 ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-                ('LEFTPADDING', (0, 0), (-1, -1), 6),
-                ('RIGHTPADDING', (0, 0), (-1, -1), 6),
-                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.HexColor("#ffffff"), colors.HexColor("#f8fafc")]),
+                ('LEFTPADDING', (0, 0), (-1, -1), 5),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 5),
+                ('GRID', (0, 0), (-1, -1), 0.75, colors.HexColor("#94a3b8")),
+                ('LINEBELOW', (0, 0), (-1, 0), 1.5, colors.HexColor("#0284c7")),
             ]))
             story.append(Spacer(1, 4))
             story.append(t)
@@ -1104,6 +1208,12 @@ def main():
     print(" FLEETPULSE AI — ACADEMIC PROJECT REPORT EXPORT ENGINE")
     print("=" * 76)
 
+    # First, generate all figures
+    figures_script = os.path.join(os.path.dirname(__file__), "generate_figures.py")
+    if os.path.exists(figures_script):
+        import generate_figures
+        generate_figures.main()
+
     if not os.path.exists(REPORT_MD_PATH):
         print(f"Error: {REPORT_MD_PATH} not found!")
         sys.exit(1)
@@ -1113,7 +1223,7 @@ def main():
 
     print(f"Read markdown report: {len(md_text):,} characters from {REPORT_MD_PATH}")
     blocks = parse_markdown_blocks(md_text)
-    print(f"Parsed {len(blocks)} document blocks (headers, paragraphs, tables, equations).")
+    print(f"Parsed {len(blocks)} document blocks (headers, images, tables, equations).")
 
     print("\n--- Generating Word Document (.docx) ---")
     generate_docx(blocks, DOCX_OUTPUT_PATH)

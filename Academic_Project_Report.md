@@ -132,22 +132,10 @@ $$\mu_{\text{crisp}}(t) = \begin{cases} 1, & \text{if } t \in [T_{\text{start}},
 
 Under this binary regime, an arrival that occurs 1 second past $T_{\text{end}}$ is categorized as a complete 100% SLA failure ($0$ utility), identical to a parcel delivered five hours late. This mathematical rigidity fails to mirror realistic human behavioral tolerance and cannot adapt to urban stochastic uncertainties such as sudden traffic snarls, monsoonal downpours, or brief dispatch delays.
 
-```mermaid
-flowchart TD
-    A["Urban Delivery Challenge"] --> B["Combinatorial Explosion: 25! ≈ 1.55 × 10^25 Paths"]
-    A --> C["Physical Constraints: Payload ≤ 100 kg/van"]
-    A --> D["Dynamic Uncertainty: Monsoon Weather & Traffic Spikes"]
-    A --> E["Crisp Failure: 1-Minute Late = 0% SLA Utility"]
-    
-    B --> F["Soft Computing Paradigm Required"]
-    C --> F
-    D --> F
-    E --> F
-    
-    F --> G["Continuous Fuzzy Time Windows: μ(t) ∈ [0, 1]"]
-    F --> H["Mamdani Fuzzy Traffic Matrix: τ ∈ [1.00x, 1.85x]"]
-    F --> I["Memetic Evolutionary Search: Hybrid Fuzzy-NSGA-II"]
-```
+
+![Figure 1: Conceptual mapping from last-mile operational challenges to the integrated Soft Computing paradigm.](figures/fig1_soft_computing_paradigm.png)
+*Figure 1: Conceptual mapping from last-mile operational challenges to the integrated Soft Computing paradigm.*
+
 
 ### 1.4 The Soft Computing Paradigm: Fuzzy Logic + Evolutionary Metaheuristics
 Soft computing provides the mathematical tools required to conquer this dual challenge:
@@ -226,39 +214,10 @@ The primary contributions of this project are:
 6. **5-Seed Monte Carlo Validation:** Rigorous statistical analysis proving deterministic stability.
 7. **Interactive 60FPS Command Center:** Full-stack Streamlit application featuring HTML5 Canvas vector radar simulation.
 
-```mermaid
-graph LR
-    subgraph Input_Layer ["1. Input Layer"]
-        D1["GIS GPS Coordinates"]
-        D2["Payload Demands (kg)"]
-        D3["Priority Tiers"]
-        D4["SLA Time Windows"]
-        E1["Traffic & Weather"]
-    end
 
-    subgraph Perception_Layer ["2. Soft Perception Layer"]
-        F1["Multi-Kernel Fuzzy Engine: μ(t)"]
-        F2["9-Rule Mamdani Inference: τ"]
-    end
+![Figure 2: End-to-end 4-stage computational pipeline connecting GIS inputs to telematic visualization.](figures/fig2_system_pipeline.png)
+*Figure 2: End-to-end 4-stage computational pipeline connecting GIS inputs to telematic visualization.*
 
-    subgraph Optimization_Engine ["3. Multi-Algorithm Optimization"]
-        A1["Proposed: Hybrid Fuzzy-NSGA-II"]
-        A2["MO-ACO"]
-        A3["MOPSO"]
-        A4["Standard GA"]
-        A5["Greedy Heuristic"]
-    end
-
-    subgraph Decision_Output ["4. Decision & Visualization"]
-        P1["Knee-Point Balanced Schedule"]
-        P2["Non-Dominated Pareto Frontier"]
-        P3["60FPS Vector Radar HUD"]
-    end
-
-    Input_Layer --> Perception_Layer
-    Perception_Layer --> Optimization_Engine
-    Optimization_Engine --> Decision_Output
-```
 
 ### 4.2 Bi-Objective Mathematical Optimization Formulation
 The framework optimizes two conflicting fitness functions:
@@ -305,28 +264,10 @@ The complete computational pipeline consists of four major sequential stages:
 3. **Multi-Objective Optimization Search:** Evolutionary populations or swarm agents iteratively generate, evaluate, and refine candidate routes.
 4. **Pareto Selection & Telemetry Output:** Non-dominated sorting identifies the Pareto frontier, and normalized Utopia distance selects the knee-point dispatch plan.
 
-```mermaid
-flowchart TD
-    Start(["Start Optimization"]) --> Init["Step 1: Heuristic Population Initialization"]
-    Init --> Seed1["Seed 1: Earliest Deadline First (EDF)"]
-    Init --> Seed2["Seed 2: Spatial-Urgency Hybrid"]
-    Init --> Seed3["Seed 3: Greedy Nearest-Neighbor"]
-    Init --> Seed4["Seed 4..P: Stochastic Permutations"]
-    
-    Seed1 & Seed2 & Seed3 & Seed4 --> Eval["Route Partitioning (Payload ≤ 100 kg) & Evaluation (f1, f2)"]
-    
-    Eval --> Sort["Step 2: Fast Non-Dominated Sorting & Crowding Distance"]
-    Sort --> Mating["Binary Tournament Selection"]
-    Mating --> OX["Step 3a: Order Crossover (OX)"]
-    OX --> Mut["Step 3b: Swap & 2-Opt Inversion Mutation"]
-    Mut --> ReEval["Combined Population Evaluation (Size 2P)"]
-    ReEval --> Elitism["Elitist Selection of Top P Chromosomes"]
-    
-    Elitism --> Check{"Generation Limit Reached?"}
-    Check -- No --> Sort
-    Check -- Yes --> Knee["Step 4: Utopia Knee-Point Balanced Solution Selector"]
-    Knee --> Finish(["Output Non-Dominated Pareto Frontier"])
-```
+
+![Figure 3: Memetic Hybrid Fuzzy-NSGA-II search architecture featuring heuristic seeding, OX1 crossover, and 2-Opt local refinement.](figures/fig3_nsga2_workflow.png)
+*Figure 3: Memetic Hybrid Fuzzy-NSGA-II search architecture featuring heuristic seeding, OX1 crossover, and 2-Opt local refinement.*
+
 
 ### 5.2 Chromosome Encoding & Payload-Constrained Fleet Partitioning
 A candidate chromosome is represented as an unconstrained permutation vector of stop identifiers:
@@ -341,15 +282,10 @@ To partition $\pi$ into feasible vehicle routes under the payload limit $Q_{\tex
 ### 5.3 Multi-Kernel Fuzzification of Delivery Timelines
 For each customer stop $i$, arrival timestamp $t_i$ is mapped to a satisfaction degree $\mu(t_i) \in [0.0, 1.0]$ based on preferred window $[e_i, l_i]$ and maximum acceptable deadline $u_i$:
 
-```mermaid
-xychart-beta
-    title "Fuzzy Satisfaction Decay: μ(t) vs Arrival Time"
-    x-axis "Arrival Time (min)" [10, 20, 30, 40, 50, 60, 70]
-    y-axis "Satisfaction μ(t)" 0.0 --> 1.0
-    line "Trapezoidal" [1.0, 1.0, 1.0, 0.67, 0.33, 0.0, 0.0]
-    line "Gaussian" [1.0, 1.0, 1.0, 0.77, 0.36, 0.10, 0.01]
-    line "Sigmoidal" [1.0, 1.0, 1.0, 0.88, 0.50, 0.12, 0.01]
-```
+
+![Figure 4: Comparative evaluation of Trapezoidal, Gaussian, and Sigmoidal fuzzy satisfaction decay kernels.](figures/fig4_fuzzy_decay.png)
+*Figure 4: Comparative evaluation of Trapezoidal, Gaussian, and Sigmoidal fuzzy satisfaction decay kernels.*
+
 
 1. **Trapezoidal Kernel:**
    $$\mu_{\text{trap}}(t_i) = \begin{cases} 1.0, & t_i \le l_i \\ \dfrac{u_i - t_i}{u_i - l_i}, & l_i < t_i \le u_i \\ 0.0, & t_i > u_i \end{cases}$$
@@ -390,18 +326,21 @@ $$d_{\text{utopia}}(p) = \sqrt{0.45 \left( \frac{f_1(p) - f_1^{\min}}{f_1^{\max}
 Let $G = (V, E)$ be a complete directed graph where $V = \{0, 1, \dots, N\}$. Vertex $0$ is the central depot, and $V_c = \{1, \dots, N\}$ are the customer nodes.
 
 #### Parameters & Variables:
-- $q_i$: Payload demand of customer $i$ ($q_i \in [10, 45]\text{ kg}$).
-- $Q_{\text{max}}$: Maximum vehicle payload ($100\text{ kg/van}$).
-- $w_i$: Priority weight ($\text{Critical}=1.35, \text{High}=1.15, \text{Normal}=1.00$).
+- $q_i$: Payload demand of customer $i$ ($q_i \in [10, 45]$ kg).
+- $Q_{\text{max}}$: Maximum vehicle payload ($100$ kg/van).
+- $w_i$: Priority weight (Critical = 1.35, High = 1.15, Normal = 1.00).
 - $d_{ij}$: Euclidean distance between nodes $i$ and $j$.
 - $x_{ijk} \in \{0, 1\}$: Binary decision variable equal to $1$ if vehicle $k$ traverses edge $(i, j)$, $0$ otherwise.
 - $L_{k,j}$: Instantaneous load of vehicle $k$ leaving stop $j$.
 
-#### Objective 1: Load-Dependent Fleet Energy Cost ($f_1$):
-$$\min f_1 = \sum_{k=1}^K \sum_{j=0}^{m_k} \Big[ d_{s_{k,j}, s_{k,j+1}} \times \big(1 + 0.006 \times L_{k,j}\big) \times \big(0.85 + 0.15 \times \tau\big) \Big]$$
-Where $0.006\text{ kg}^{-1}$ is the vehicle load friction coefficient, and $(0.85 + 0.15\tau)$ represents the traffic congestion drag multiplier.
+#### Objective 1: Load-Dependent Fleet Energy Cost (f1):
 
-#### Objective 2: Priority-Weighted Fuzzy Customer Satisfaction ($f_2$):
+$$\min f_1 = \sum_{k=1}^K \sum_{j=0}^{m_k} \Big[ d_{s_{k,j}, s_{k,j+1}} \times \big(1 + 0.006 \times L_{k,j}\big) \times \big(0.85 + 0.15 \times \tau\big) \Big]$$
+
+Where 0.006 kg^-1 is the vehicle load friction coefficient, and (0.85 + 0.15 * tau) represents the dynamic traffic congestion drag multiplier.
+
+#### Objective 2: Priority-Weighted Fuzzy Customer Satisfaction (f2):
+
 $$\max f_2 = \frac{\sum_{i=1}^N \Big( \mu_{\text{fuzzy}}(t_i) \times w_i \Big)}{\sum_{i=1}^N w_i} \times 100\%$$
 
 #### Constraints:
@@ -435,24 +374,10 @@ The system architecture decouples the problem into three independent layers:
 - **Layer 2: Multi-Objective Optimizers Engine** (`core_optimizers.py`): Implements NSGA-II, MOPSO, MO-ACO, SGA, and Greedy solvers with vectorized Pareto sorting.
 - **Layer 3: Telemetry Command Center** (`app.py`): High-frame-rate Streamlit interface rendering real-time vector radar simulations, 3D response surfaces, and Pareto plots.
 
-```mermaid
-graph TD
-    UI["app.py (Streamlit Frontend)"] --> Sub1["HTML5 Vector Radar (1440x640)"]
-    UI --> Sub2["Live Generation Convergence Race"]
-    UI --> Sub3["Rotatable 3D Fuzzy Surface"]
-    UI --> Sub4["Pareto Frontier Studio"]
-    
-    UI --> CoreOpt["core_optimizers.py (Algorithmic Core)"]
-    CoreOpt --> Alg1["Hybrid NSGA-II"]
-    CoreOpt --> Alg2["MO-ACO"]
-    CoreOpt --> Alg3["MOPSO"]
-    CoreOpt --> Alg4["SGA / Greedy"]
-    
-    CoreOpt --> CoreFuzzy["core_data_and_fuzzy.py (Physics & Fuzzy Layer)"]
-    CoreFuzzy --> M1["Load-Dependent Energy Model"]
-    CoreFuzzy --> M2["Multi-Kernel Fuzzy Kernels"]
-    CoreFuzzy --> M3["9-Rule Mamdani Traffic Matrix"]
-```
+
+![Figure 5: Decoupled 3-tier modular system architecture connecting frontend HUD, metaheuristic core, and physics engines.](figures/fig5_software_architecture.png)
+*Figure 5: Decoupled 3-tier modular system architecture connecting frontend HUD, metaheuristic core, and physics engines.*
+
 
 ---
 
@@ -523,13 +448,10 @@ Evaluated under identical constraints: 18 Nodes, $Q_{\text{max}} = 100\text{ kg}
 | **Greedy Nearest-Neighbor** | 351.32 | 63.06% | 4 Vans | N/A (Single Point) | 0.5 ms | **Rank #4** |
 | **Standard Single-Objective GA** | 405.61 | 54.19% | 4 Vans | 11.75 | 50.4 ms | **Rank #5** |
 
-```mermaid
-xychart-beta
-    title "Fuzzy Customer Satisfaction % vs Algorithm"
-    x-axis ["Hybrid NSGA-II", "MO-ACO", "Greedy Baseline", "MOPSO", "Standard GA"]
-    y-axis "Satisfaction (%)" 0 --> 100
-    bar [73.50, 71.35, 63.06, 61.36, 54.19]
-```
+
+![Figure 6: Quantitative benchmarking comparison of Fuzzy Customer Satisfaction (%) and Pareto Hypervolume (HV).](figures/fig6_benchmark_comparison.png)
+*Figure 6: Quantitative benchmarking comparison of Fuzzy Customer Satisfaction (%) and Pareto Hypervolume (HV).*
+
 
 ### 8.3 Pareto Frontier Geometry & Hypervolume Analysis
 - **Hypervolume Metric (HV):** Computed with reference point $(f_1^{\text{ref}} = 950.0, f_2^{\text{ref}} = 0.0)$.
