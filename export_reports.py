@@ -161,6 +161,9 @@ def clean_latex_basic(text):
         (r"\\!", ""),
 
         # Calculus and Summations
+        (r"d_\{s_\{k,j\},\s*s_\{k,j\+1\}\}", "d(s_k,j, s_k,j+1)"),
+        (r"d_\{s_\{k,j\},\s*s_k,j\+1\}", "d(s_k,j, s_k,j+1)"),
+        (r"\{?d_s_\{k,j,\s*s_k,j\+1\}?", "d(s_k,j, s_k,j+1)"),
         (r"\\sum_\{k=1\}\^K", "sum(k=1..K)"),
         (r"\\sum_\{j=0\}\^\{m_k\}", "sum(j=0..m_k)"),
         (r"\\sum_\{i=1\}\^N", "sum(i=1..N)"),
@@ -1142,10 +1145,14 @@ def generate_pdf(blocks, output_path):
                 is_h = (r_idx == 0)
                 row_cells = []
                 for c in r:
-                    c_clean = format_markdown_for_pdf(c)
                     if is_h:
-                        row_cells.append(Paragraph(f"<b>{c_clean}</b>", styles["TableHeader"]))
+                        # Table header: force bright white text, stripping any dark font tags
+                        c_clean = clean_latex(c).replace("`", "").replace("$", "")
+                        c_clean = re.sub(r'<font[^>]*>', '', c_clean).replace('</font>', '')
+                        c_esc = escape_xml(c_clean)
+                        row_cells.append(Paragraph(f"<b><font color='#ffffff'>{c_esc}</font></b>", styles["TableHeader"]))
                     else:
+                        c_clean = format_markdown_for_pdf(c)
                         row_cells.append(Paragraph(c_clean, styles["TableCell"]))
                 table_flow_data.append(row_cells)
 

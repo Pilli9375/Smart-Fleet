@@ -335,7 +335,7 @@ Let $G = (V, E)$ be a complete directed graph where $V = \{0, 1, \dots, N\}$. Ve
 
 #### Objective 1: Load-Dependent Fleet Energy Cost (f1):
 
-$$\min f_1 = \sum_{k=1}^K \sum_{j=0}^{m_k} \Big[ d_{s_{k,j}, s_{k,j+1}} \times \big(1 + 0.006 \times L_{k,j}\big) \times \big(0.85 + 0.15 \times \tau\big) \Big]$$
+$$\min f_1 = \sum_{k=1}^K \sum_{j=0}^{m_k} \Big[ d(s_{k,j}, s_{k,j+1}) \times \big(1 + 0.006 \times L_{k,j}\big) \times \big(0.85 + 0.15 \times \tau\big) \Big]$$
 
 Where 0.006 kg^-1 is the vehicle load friction coefficient, and (0.85 + 0.15 * tau) represents the dynamic traffic congestion drag multiplier.
 
@@ -350,7 +350,7 @@ $$\max f_2 = \frac{\sum_{i=1}^N \Big( \mu_{\text{fuzzy}}(t_i) \times w_i \Big)}{
 
 ### 6.2 Complete 9-Rule Mamdani Environmental Matrix
 
-| Rule # | Traffic Input ($x_T$) | Weather Input ($x_W$) | Linguistic Output Flow | Crisp Delay Factor ($\tau$) |
+| Rule # | Traffic Input (x_T) | Weather Input (x_W) | Linguistic Output Flow | Crisp Delay Factor (tau) |
 | :---: | :--- | :--- | :--- | :---: |
 | **R1** | Low Traffic | Clear Weather | Optimal Flow | **$1.00\times$** |
 | **R2** | Low Traffic | Light Rain | Moderate Flow | **$1.12\times$** |
@@ -440,7 +440,7 @@ Evaluation was performed across three benchmark datasets:
 ### 8.2 Quantitative Head-to-Head 5-Algorithm Benchmarking Arena
 Evaluated under identical constraints: 18 Nodes, $Q_{\text{max}} = 100\text{ kg}$, Medium Traffic ($\tau = 1.18\times$), Trapezoidal Kernel, Population Size $40$, Generations $40$, Seed $42$:
 
-| Algorithm Paradigm | Fleet Energy Cost ($f_1$) | Fuzzy Satisfaction ($f_2$) | Active Vans | Hypervolume (HV) | Runtime (ms) | Overall Arena Rank |
+| Algorithm Paradigm | Fleet Energy Cost (f1) | Fuzzy Satisfaction (f2) | Active Vans | Hypervolume (HV) | Runtime (ms) | Overall Arena Rank |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
 | **Hybrid Fuzzy-NSGA-II (Proposed)** | **374.70** | **73.50%** | **4 Vans** | **21.96** | 328.6 ms | **Rank #1 (Champion)** |
 | **Multi-Objective ACO (MO-ACO)** | 351.22 | 71.35% | 4 Vans | 21.23 | 162.3 ms | **Rank #2 (Runner-Up)** |
@@ -461,7 +461,7 @@ Evaluated under identical constraints: 18 Nodes, $Q_{\text{max}} = 100\text{ kg}
 
 ### 8.4 Comparative Fuzzy Membership Kernel Evaluation
 We evaluated the effect of varying the fuzzy membership kernel on the 18-node Amaravati corridor:
-- **Trapezoidal Kernel:** Yields crisp tolerance up to $l_i$ with linear decay. Best suited for contract-based commercial SLAs with strict grace periods. Final satisfaction: **73.50%**.
+- **Trapezoidal Kernel:** Yields crisp tolerance up to l_i (best_end) with linear decay. Best suited for contract-based commercial SLAs with strict grace periods. Final satisfaction: **73.50%**.
 - **Gaussian Kernel:** Continuous exponential bell decay. Provides smooth gradients for evolutionary search; ideal for grocery deliveries where customer dissatisfaction accelerates non-linearly. Final satisfaction: **71.82%**.
 - **Sigmoidal Kernel:** Logistic S-curve with steep midpoint decline. Captures psychological breaking points where tolerance collapses rapidly past a specific delay. Final satisfaction: **69.45%**.
 
@@ -497,7 +497,7 @@ Evaluating the 9-Rule Mamdani matrix across environmental conditions:
 ### 9.3 5-Seed Monte Carlo Statistical Stability & Variance Analysis
 To verify that algorithmic superiority was not an artifact of favorable random seed initialization, each metaheuristic was executed across **5 independent Monte Carlo runs** ($\text{Seeds} \in \{100, 101, 102, 103, 104\}$):
 
-| Algorithm | Mean Energy Cost ($f_1$) | Mean Satisfaction ($f_2$) | Mean Hypervolume (HV) | Mean Runtime (ms) | Statistical Stability |
+| Algorithm | Mean Energy Cost (f1) | Mean Satisfaction (f2) | Mean Hypervolume (HV) | Mean Runtime (ms) | Statistical Stability |
 | :--- | :---: | :---: | :---: | :---: | :--- |
 | **Hybrid Fuzzy-NSGA-II (Proposed)** | **$240.37 \pm 0.00$** | **$68.09 \pm 0.00\%$** | **$35.88 \pm 0.71$ (#1)** | $431.9 \pm 12.4\text{ ms}$ | **Deterministic ($0.00$ Variance)** |
 | **Multi-Objective ACO** | $254.19 \pm 2.25$ | $65.30 \pm 5.70\%$ | $35.06 \pm 1.14$ | $94.4 \pm 4.2\text{ ms}$ | High Variance in Satisfaction |

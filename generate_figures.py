@@ -197,15 +197,17 @@ def create_fig3():
                 arrowprops=dict(arrowstyle="->", color="#9333ea", lw=1.2, connectionstyle="arc3,rad=0.2"),
                 fontsize=7.0, color="#7e22ce", ha="center", fontweight="bold")
 
-    # Bottom Decision / Utopia Box
-    box_utopia = patches.FancyBboxPatch((3.0, 0.4), 4.0, 1.0, boxstyle="round,pad=0.08,rounding_size=0.1",
-                                        facecolor="#0f172a", edgecolor="#0284c7", linewidth=1.2)
+    # Bottom Decision / Utopia Box (WIDENED to 7.2 units and adjusted font to prevent formula overflow)
+    box_utopia = patches.FancyBboxPatch((1.4, 0.35), 7.2, 1.15, boxstyle="round,pad=0.08,rounding_size=0.12",
+                                        facecolor="#0f172a", edgecolor="#0284c7", linewidth=1.3)
     ax.add_patch(box_utopia)
-    ax.text(5.0, 1.05, "Step 5: Multi-Criteria Utopia Knee-Point Selector", ha="center", va="center", fontsize=8.2, fontweight="bold", color="#38bdf8")
-    ax.text(5.0, 0.65, "d_utopia = √[ 0.45·((f1 - f1_min)/(f1_max - f1_min))^2 + 0.55·((f2_max - f2)/(f2_max - f2_min))^2 ]\nSelects single balanced commercial dispatch schedule from Pareto front",
-            ha="center", va="center", fontsize=6.4, color="#e2e8f0")
+    ax.text(5.0, 1.18, "Step 5: Multi-Criteria Utopia Knee-Point Selector", ha="center", va="center", fontsize=8.2, fontweight="bold", color="#38bdf8")
+    ax.text(5.0, 0.80, "d_utopia(p) = √[ 0.45 · ((f1(p) - f1_min) / (f1_max - f1_min))²  +  0.55 · ((f2_max - f2(p)) / (f2_max - f2_min))² ]",
+            ha="center", va="center", fontsize=6.1, fontweight="bold", color="#e2e8f0")
+    ax.text(5.0, 0.50, "Selects single balanced commercial dispatch schedule from non-dominated Pareto archive",
+            ha="center", va="center", fontsize=5.8, color="#94a3b8")
 
-    ax.annotate("", xy=(5.0, 1.45), xytext=(7.5, 2.35),
+    ax.annotate("", xy=(5.0, 1.55), xytext=(7.5, 2.35),
                 arrowprops=dict(arrowstyle="->", color="#0284c7", lw=1.3, connectionstyle="arc3,rad=-0.15"))
 
     plt.tight_layout()
@@ -276,7 +278,7 @@ def create_fig4():
 # FIGURE 5: Decoupled 3-Tier Layered Software Architecture
 # =====================================================================
 def create_fig5():
-    fig, ax = plt.subplots(figsize=(8.6, 3.6), dpi=300)
+    fig, ax = plt.subplots(figsize=(8.8, 3.6), dpi=300)
     ax.set_xlim(0, 10)
     ax.set_ylim(0, 4)
     ax.axis('off')
@@ -287,8 +289,9 @@ def create_fig5():
     ax.text(5.0, 3.65, "FleetPulse AI Decoupled 3-Tier Layered Software Architecture",
             ha="center", va="center", fontsize=10.5, fontweight="bold", color="#0f172a")
 
+    # WIDENED GAPS: 3 boxes of width 2.50 with 0.85-unit gaps between them
     tiers = [
-        (0.4, 0.4, 2.8, 2.9, "Tier 1: Telemetry HUD", "app.py (Streamlit Frontend)", "#0f172a", "#38bdf8", [
+        (0.40, 0.35, 2.50, 3.0, "Tier 1: Telemetry HUD", "app.py (Streamlit Frontend)", "#0f172a", "#38bdf8", [
             "HTML5 Vector Radar Canvas HUD",
             "Multi-Algorithm Benchmark Arena",
             "Pareto Frontier Studio (Plotly)",
@@ -296,7 +299,7 @@ def create_fig5():
             "5-Seed Monte Carlo Validator",
             "Industrial Zinc Dark Theme"
         ]),
-        (3.6, 0.4, 2.8, 2.9, "Tier 2: Metaheuristic Core", "core_optimizers.py (Solvers)", "#1e293b", "#34d399", [
+        (3.75, 0.35, 2.50, 3.0, "Tier 2: Metaheuristic Core", "core_optimizers.py (Solvers)", "#1e293b", "#34d399", [
             "Hybrid Fuzzy-NSGA-II Engine",
             "Multi-Objective ACO (MO-ACO)",
             "Multi-Objective PSO (MOPSO)",
@@ -304,7 +307,7 @@ def create_fig5():
             "Greedy Nearest-Neighbor Dispatcher",
             "Utopia Knee-Point Selection"
         ]),
-        (6.8, 0.4, 2.8, 2.9, "Tier 3: Physics & Fuzzy Core", "core_data_and_fuzzy.py (Engine)", "#0f172a", "#fbbf24", [
+        (7.10, 0.35, 2.50, 3.0, "Tier 3: Physics & Fuzzy Core", "core_data_and_fuzzy.py (Engine)", "#0f172a", "#fbbf24", [
             "GIS Amaravati Node Coordinates",
             "Load Friction Physics (0.006/kg)",
             "Multi-Kernel SLA Functions",
@@ -318,17 +321,29 @@ def create_fig5():
         box = patches.FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.08,rounding_size=0.1",
                                      facecolor=bg, edgecolor=accent, linewidth=1.3)
         ax.add_patch(box)
-        ax.text(x + w/2, y + h - 0.25, tier_label, ha="center", va="center", fontsize=8.2, fontweight="bold", color=accent)
-        ax.text(x + w/2, y + h - 0.55, sub_label, ha="center", va="center", fontsize=6.8, color="#94a3b8")
+        ax.text(x + w/2, y + h - 0.25, tier_label, ha="center", va="center", fontsize=8.0, fontweight="bold", color=accent)
+        ax.text(x + w/2, y + h - 0.52, sub_label, ha="center", va="center", fontsize=6.6, color="#94a3b8")
 
         for i_idx, item in enumerate(items):
-            ax.text(x + 0.18, y + h - 0.95 - i_idx * 0.32, f"• {item}", ha="left", va="center", fontsize=6.6, color="#e2e8f0")
+            ax.text(x + 0.15, y + h - 0.88 - i_idx * 0.34, f"• {item}", ha="left", va="center", fontsize=6.3, color="#e2e8f0")
 
-    # Arrows between tiers
-    ax.annotate("Dispatches Orders\n& Parameters", xy=(3.55, 2.1), xytext=(3.25, 2.1),
-                arrowprops=dict(arrowstyle="->", color="#0284c7", lw=1.2), fontsize=6.0, color="#0284c7", ha="center")
-    ax.annotate("Evaluates Routes\n& Physics", xy=(6.75, 2.1), xytext=(6.45, 2.1),
-                arrowprops=dict(arrowstyle="->", color="#10b981", lw=1.2), fontsize=6.0, color="#10b981", ha="center")
+    # Tier 1 <-> Tier 2 Communication (In 0.85-unit gap between 2.90 and 3.75)
+    # Forward: Dispatches Orders
+    ax.annotate("", xy=(3.70, 2.10), xytext=(2.95, 2.10), arrowprops=dict(arrowstyle="->", color="#0284c7", lw=1.3))
+    ax.text(3.325, 2.25, "Dispatches\nOrders", ha="center", va="bottom", fontsize=5.8, fontweight="bold", color="#0284c7")
+
+    # Backward: Telematics Metrics
+    ax.annotate("", xy=(2.95, 1.25), xytext=(3.70, 1.25), arrowprops=dict(arrowstyle="->", color="#38bdf8", lw=1.1, linestyle="--"))
+    ax.text(3.325, 1.10, "Telematics\nMetrics", ha="center", va="top", fontsize=5.6, color="#0369a1")
+
+    # Tier 2 <-> Tier 3 Communication (In 0.85-unit gap between 6.25 and 7.10)
+    # Forward: Evaluates Physics
+    ax.annotate("", xy=(7.05, 2.10), xytext=(6.30, 2.10), arrowprops=dict(arrowstyle="->", color="#10b981", lw=1.3))
+    ax.text(6.675, 2.25, "Evaluates\nPhysics", ha="center", va="bottom", fontsize=5.8, fontweight="bold", color="#059669")
+
+    # Backward: SLA & Drag Factors
+    ax.annotate("", xy=(6.30, 1.25), xytext=(7.05, 1.25), arrowprops=dict(arrowstyle="->", color="#34d399", lw=1.1, linestyle="--"))
+    ax.text(6.675, 1.10, "SLA & Drag\nFactors", ha="center", va="top", fontsize=5.6, color="#047857")
 
     plt.tight_layout()
     path = os.path.join(FIGURES_DIR, "fig5_software_architecture.png")
