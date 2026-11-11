@@ -11,6 +11,12 @@ A **Soft Computing Research and Enterprise Logistics Dispatch Suite** combining 
 ### 👥 Project Team Members
 - **V Naga Adithya** — `23BCE9062`
 - **M Karthik** — `23BCE9659`
+- **Faculty Guide / Evaluator:** **Dr. Seetha Hari**, Associate Professor, SCOPE, VIT-AP University
+
+### 📄 Academic Project Reports (Formatted as per Faculty Guidelines)
+- **[Word Document Report (.docx)](file:///c:/Pilli/Soft%20Computing/FleetPulse_AI_Project_Report.docx)**: `FleetPulse_AI_Project_Report.docx`
+- **[PDF Academic Report (.pdf)](file:///c:/Pilli/Soft%20Computing/FleetPulse_AI_Project_Report.pdf)**: `FleetPulse_AI_Project_Report.pdf` (23 pages, fully formatted as per Dr. Seetha Hari's 15-section outline)
+- **[Markdown Master Report (.md)](file:///c:/Pilli/Soft%20Computing/Academic_Project_Report.md)**: `Academic_Project_Report.md`
 
 ---
 

@@ -308,17 +308,18 @@ def generate_docx(blocks, output_path):
     r_div.bold = True
 
     # Metadata Card (Table)
-    meta_table = doc.add_table(rows=6, cols=2)
+    meta_table = doc.add_table(rows=7, cols=2)
     meta_table.alignment = WD_TABLE_ALIGNMENT.CENTER
     meta_table.autofit = False
 
     meta_items = [
         ("Project Domain:", "Soft Computing & Artificial Intelligence (Fuzzy Logic + Evolutionary Computation)"),
-        ("Project Type:", "Comprehensive Academic Capstone & Research Benchmark Report"),
-        ("Institution:", "Department of Computer Science and Engineering"),
-        ("Target Publication:", "A Hybrid Mamdani-Fuzzy and Memetic NSGA-II Framework for Load-Dependent Fleet Dispatching (IEEE / MDPI Systems)"),
+        ("Course & Project Type:", "Soft Computing (Undergraduate Mini-Project / Capstone Report)"),
+        ("Faculty Guide / Evaluator:", "Dr. Seetha Hari, Associate Professor, SCOPE, VIT-AP University"),
+        ("Institution:", "School of Computer Science & Engineering (SCOPE), VIT-AP University, Amaravati"),
         ("Team Member 1:", "V Naga Adithya  |  Registration No: 23BCE9062"),
-        ("Team Member 2:", "M Karthik       |  Registration No: 23BCE9659")
+        ("Team Member 2:", "M Karthik       |  Registration No: 23BCE9659"),
+        ("Submission Date:", "November 2026  (Academic Year: 2026–2027)")
     ]
 
     for idx, (label, val) in enumerate(meta_items):
@@ -358,16 +359,22 @@ def generate_docx(blocks, output_path):
     # -------------------------------------------------------------
     # DOCUMENT BODY (PARSED MARKDOWN BLOCKS)
     # -------------------------------------------------------------
-    skip_initial_title = True
+    skip_preamble = True
     for block in blocks:
         btype = block["type"]
+
+        if skip_preamble:
+            if btype == "header" and block["text"] == "Abstract":
+                skip_preamble = False
+            else:
+                continue
 
         if btype == "header":
             level = block["level"]
             text = block["text"]
-            if skip_initial_title and level == 1 and "Hybrid Fuzzy-NSGA-II" in text:
-                skip_initial_title = False
-                continue
+
+            if level == 2 and (text in ["Table of Contents"] or re.match(r"^\d+\.", text)):
+                doc.add_page_break()
 
             hp = doc.add_paragraph()
             hp.paragraph_format.keep_with_next = True
@@ -548,7 +555,7 @@ class NumberedCanvas(canvas.Canvas):
             # Running Footer
             page_text = f"Page {self._pageNumber} of {page_count}"
             self.drawRightString(558, 38, page_text)
-            self.drawString(54, 38, "V Naga Adithya (23BCE9062) & M Karthik (23BCE9659) — Dept of CSE")
+            self.drawString(54, 38, "V Naga Adithya (23BCE9062) & M Karthik (23BCE9659) | Faculty Guide: Dr. Seetha Hari")
             self.line(54, 48, 558, 48)
             self.restoreState()
 
@@ -681,23 +688,27 @@ def generate_pdf(blocks, output_path):
     meta_rows = [
         [
             Paragraph("<b>Project Domain:</b>", styles["TableCellBold"]),
-            Paragraph("Soft Computing & Artificial Intelligence (Fuzzy Logic + Evolutionary)", styles["TableCell"])
+            Paragraph("Soft Computing & Artificial Intelligence (Fuzzy Logic + Evolutionary Computation)", styles["TableCell"])
         ],
         [
-            Paragraph("<b>Document Type:</b>", styles["TableCellBold"]),
-            Paragraph("Comprehensive Academic Capstone & Research Benchmark Report", styles["TableCell"])
+            Paragraph("<b>Course & Category:</b>", styles["TableCellBold"]),
+            Paragraph("Soft Computing (CSE Undergraduate Mini-Project / Capstone Report)", styles["TableCell"])
         ],
         [
-            Paragraph("<b>Department:</b>", styles["TableCellBold"]),
-            Paragraph("Department of Computer Science and Engineering", styles["TableCell"])
+            Paragraph("<b>Faculty Guide / Evaluator:</b>", styles["TableCellBold"]),
+            Paragraph("<b>Dr. Seetha Hari</b>, Associate Professor, SCOPE, VIT-AP University", styles["TableCell"])
         ],
         [
-            Paragraph("<b>Target Journal:</b>", styles["TableCellBold"]),
-            Paragraph("IEEE / MDPI Systems — Special Issue on Computational Logistics", styles["TableCell"])
+            Paragraph("<b>Institution:</b>", styles["TableCellBold"]),
+            Paragraph("School of Computer Science and Engineering (SCOPE), VIT-AP University, Amaravati", styles["TableCell"])
         ],
         [
             Paragraph("<b>Research Team:</b>", styles["TableCellBold"]),
             Paragraph("<b>V Naga Adithya</b> (23BCE9062)<br/><b>M Karthik</b> (23BCE9659)", styles["TableCell"])
+        ],
+        [
+            Paragraph("<b>Submission Date:</b>", styles["TableCellBold"]),
+            Paragraph("November 2026 (Academic Year 2026–2027)", styles["TableCell"])
         ]
     ]
     t_meta = Table(meta_rows, colWidths=[1.8 * inch, 4.8 * inch])
@@ -711,29 +722,31 @@ def generate_pdf(blocks, output_path):
         ('RIGHTPADDING', (0, 0), (-1, -1), 10),
     ]))
     story.append(t_meta)
-    story.append(Spacer(1, 40))
-    story.append(Paragraph(
-        "<i>Abstract: Addresses urban last-mile freight optimization by formulating load-dependent energy dissipation and multi-kernel continuous fuzzy SLA customer satisfaction, solved via Memetic NSGA-II with heuristic seeding and 2-opt uncrossing.</i>",
-        styles["AcademicBody"]
-    ))
     story.append(PageBreak())
 
     # -------------------------------------------------------------
     # REPORT BODY
     # -------------------------------------------------------------
-    skip_title = True
+    skip_preamble = True
     for block in blocks:
         btype = block["type"]
+
+        if skip_preamble:
+            if btype == "header" and block["text"] == "Abstract":
+                skip_preamble = False
+            else:
+                continue
 
         if btype == "header":
             level = block["level"]
             text = block["text"]
-            if skip_title and level == 1 and "Hybrid Fuzzy-NSGA-II" in text:
-                skip_title = False
-                continue
 
             # Strip markdown formatting inside header
             clean_head = re.sub(r"[*`$]", "", text)
+            if level == 2 and (clean_head in ["Abstract", "Table of Contents"] or re.match(r"^\d+\.", clean_head)):
+                if clean_head != "Abstract":
+                    story.append(PageBreak())
+
             if level == 1:
                 story.append(Paragraph(clean_head, styles["SectionH1"]))
             elif level == 2:
