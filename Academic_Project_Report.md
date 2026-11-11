@@ -7,8 +7,8 @@
 **Institution:** School of Computer Science and Engineering (SCOPE), VIT-AP University, Amaravati  
 
 **Submitted By:**  
-- **V Naga Adithya** — Registration Number: `23BCE9062`  
-- **M Karthik** — Registration Number: `23BCE9659`  
+- **V Naga Adithya** — Registration Number: **23BCE9062**  
+- **M Karthik** — Registration Number: **23BCE9659**  
 
 **Faculty Guide / Evaluator:**  
 - **Dr. Seetha Hari**  
@@ -35,69 +35,72 @@ We benchmark the proposed Hybrid Fuzzy-NSGA-II against four competing paradigms:
 
 ## Table of Contents
 
-- [Title Page](#project-report-format)
-- [Abstract](#abstract)
-- [Table of Contents](#table-of-contents)
-- [1. Introduction](#1-introduction)
-  - [1.1 Background of Urban Logistics & Last-Mile Delivery Challenges](#11-background-of-urban-logistics--last-mile-delivery-challenges)
-  - [1.2 The NP-Hard Combinatorial Routing Challenge](#12-the-np-hard-combinatorial-routing-challenge)
-  - [1.3 Limitations of Crisp / Hard Computing Formulations](#13-limitations-of-crisp--hard-computing-formulations)
-  - [1.4 The Soft Computing Paradigm: Fuzzy Logic + Evolutionary Metaheuristics](#14-the-soft-computing-paradigm-fuzzy-logic--evolutionary-metaheuristics)
-  - [1.5 Problem Statement & Research Questions](#15-problem-statement--research-questions)
-- [2. Literature Review](#2-literature-review)
-  - [2.1 Recent Academic Base Papers Referenced (2024–2026)](#21-recent-academic-base-papers-referenced-20242026)
-  - [2.2 Comparative Literature Survey Matrix](#22-comparative-literature-survey-matrix)
-  - [2.3 Critical Analysis of Prior Works & Identified Research Gaps](#23-critical-analysis-of-prior-works--identified-research-gaps)
-- [3. Motivation](#3-motivation)
-  - [3.1 Economic Impact: Inefficiencies in Urban Freight Delivery](#31-economic-impact-inefficiencies-in-urban-freight-delivery)
-  - [3.2 Environmental & Carbon Emission Pressures](#32-environmental--carbon-emission-pressures)
-  - [3.3 Realistic SLA Modeling & Human Psychological Tolerance](#33-realistic-sla-modeling--human-psychological-tolerance)
-  - [3.4 Stochastic Urban Traffic & Monsoonal Dynamics](#34-stochastic-urban-traffic--monsoonal-dynamics)
-  - [3.5 Multi-Paradigm Soft Computing Benchmarking Imperative](#35-multi-paradigm-soft-computing-benchmarking-imperative)
-- [4. Proposed Work](#4-proposed-work)
-  - [4.1 Core Engineering & Research Contributions](#41-core-engineering--research-contributions)
-  - [4.2 Bi-Objective Mathematical Optimization Formulation](#42-bi-objective-mathematical-optimization-formulation)
-  - [4.3 Multi-Kernel Fuzzy Membership Modeling](#43-multi-kernel-fuzzy-membership-modeling)
-  - [4.4 9-Rule Mamdani Traffic-Weather Inference Engine](#44-9-rule-mamdani-traffic-weather-inference-engine)
-  - [4.5 Memetic Hybrid NSGA-II Search Architecture](#45-memetic-hybrid-nsga-ii-search-architecture)
-  - [4.6 5-Algorithm Rigorous Benchmarking Arena](#46-5-algorithm-rigorous-benchmarking-arena)
-  - [4.7 5-Seed Monte Carlo Statistical Validation](#47-5-seed-monte-carlo-statistical-validation)
-  - [4.8 Interactive 60FPS Telemetry Command Center](#48-interactive-60fps-telemetry-command-center)
-- [5. Methodology](#5-methodology)
-  - [5.1 End-to-End System Pipeline & Architectural Flowchart](#51-end-to-end-system-pipeline--architectural-flowchart)
-  - [5.2 Chromosome Encoding & Payload-Constrained Fleet Partitioning](#52-chromosome-encoding--payload-constrained-fleet-partitioning)
-  - [5.3 Multi-Kernel Fuzzification of Delivery Timelines](#53-multi-kernel-fuzzification-of-delivery-timelines)
-  - [5.4 Mamdani Fuzzy Inference Pipeline & Centroid Defuzzification](#54-mamdani-fuzzy-inference-pipeline--centroid-defuzzification)
-  - [5.5 Evolutionary Metaheuristic Execution & Genetic Recombination](#55-evolutionary-metaheuristic-execution--genetic-recombination)
-  - [5.6 Knee-Point Selection via Normalized Utopia Distance](#56-knee-point-selection-via-normalized-utopia-distance)
-- [6. Model / Architecture / Design](#6-model--architecture--design)
-  - [6.1 Mathematical Model Formulation & Equations](#61-mathematical-model-formulation--equations)
-  - [6.2 Complete 9-Rule Mamdani Environmental Matrix](#62-complete-9-rule-mamdani-environmental-matrix)
-  - [6.3 Genetic Chromosome Representation & Recombination Operators](#63-genetic-chromosome-representation--recombination-operators)
-  - [6.4 Modular Software Engineering Architecture](#64-modular-software-engineering-architecture)
-- [7. Implementation](#7-implementation)
-  - [7.1 Technology Stack & Development Environment](#71-technology-stack--development-environment)
-  - [7.2 File-Wise Code Breakdown & Technical Walkthrough](#72-file-wise-code-breakdown--technical-walkthrough)
-  - [7.3 Execution Instructions & Offline Batch Launcher](#73-execution-instructions--offline-batch-launcher)
-- [8. Results and Analysis](#8-results-and-analysis)
-  - [8.1 Benchmark Topologies & Datasets](#81-benchmark-topologies--datasets)
-  - [8.2 Quantitative Head-to-Head 5-Algorithm Benchmarking Arena](#82-quantitative-head-to-head-5-algorithm-benchmarking-arena)
-  - [8.3 Pareto Frontier Geometry & Hypervolume Domination Analysis](#83-pareto-frontier-geometry--hypervolume-domination-analysis)
-  - [8.4 Comparative Fuzzy Membership Kernel Evaluation](#84-comparative-fuzzy-membership-kernel-evaluation)
-  - [8.5 Mamdani Traffic & Weather Sensitivity Analysis](#85-mamdani-traffic--weather-sensitivity-analysis)
-- [9. Comparison with Existing Methods](#9-comparison-with-existing-methods)
-  - [9.1 Algorithmic Paradigm Comparison](#91-algorithmic-paradigm-comparison)
-  - [9.2 Architectural Analysis: Why Hybrid Fuzzy-NSGA-II Dominates](#92-architectural-analysis-why-hybrid-fuzzy-nsga-ii-dominates)
-  - [9.3 5-Seed Monte Carlo Statistical Stability & Variance Analysis](#93-5-seed-monte-carlo-statistical-stability--variance-analysis)
-- [10. Conclusion](#10-conclusion)
-  - [10.1 Key Findings & Scientific Milestones](#101-key-findings--scientific-milestones)
-  - [10.2 Validation of the Soft Computing Hypothesis](#102-validation-of-the-soft-computing-hypothesis)
-- [11. Scope for Future Work](#11-scope-for-future-work)
-  - [11.1 Dynamic Real-Time GPS Telematics & Mid-Route Recalibration](#111-dynamic-real-time-gps-telematics--mid-route-recalibration)
-  - [11.2 Electric Vehicle (EV) Battery State-of-Charge & Intermediate Charging](#112-electric-vehicle-ev-battery-state-of-charge--intermediate-charging)
-  - [11.3 Multi-Depot Fleet Coordination & Drone-Assisted Hybrid Delivery](#113-multi-depot-fleet-coordination--drone-assisted-hybrid-delivery)
-  - [11.4 Deep Reinforcement Learning (DRL) Surrogate Acceleration](#114-deep-reinforcement-learning-drl-surrogate-acceleration)
-- [12. References](#12-references)
+| Section & Title | Chapter / Topic Domain |
+| :--- | :--- |
+| **Title Page** | Institutional & Research Team Credentials |
+| **Abstract** | Executive Research Summary & Benchmarking Highlights |
+| **Table of Contents** | Document Roadmap & Chapter Index |
+| **1. Introduction** | Urban Freight Logistics & The NP-Hard Routing Challenge |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 1.1 Background of Urban Logistics | 40%–50% Supply Chain Delivery Cost Share |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 1.2 The NP-Hard Combinatorial Challenge | Factorial Permutation Space ($25! \approx 1.55 \times 10^{25}$) |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 1.3 Limitations of Crisp / Hard Computing | Binary Step Failure vs. Human Tolerance Degradation |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 1.4 The Soft Computing Paradigm | Fuzzy Logic + Evolutionary Multi-Objective Optimization |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 1.5 Problem Statement & Research Questions | Research Hypotheses & Investigation Boundaries |
+| **2. Literature Review** | Academic Foundation & Comparative Research Survey |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 2.1 Recent Academic Base Papers (2024–2026) | MDPI Systems, IEEE ITSC, Urban Science Studies |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 2.2 Comparative Literature Survey Matrix | Multi-Attribute Taxonomy of State-of-the-Art Works |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 2.3 Critical Analysis & Identified Gaps | Benchmarking Void & Decoupled Traffic-Energy Models |
+| **3. Motivation** | Operational, Economic & Environmental Imperatives |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 3.1 Economic Impact | Last-Mile Urban Logistics Cost Inefficiencies |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 3.2 Environmental & Carbon Emissions | Load-Dependent Fuel & Battery Consumption Pressures |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 3.3 Realistic SLA Customer Satisfaction | Continuous Tolerance Modeling vs. Punitive Cutoffs |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 3.4 Stochastic Urban Traffic & Monsoons | Adaptive Mamdani Inference for South Asian Roadways |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 3.5 Multi-Paradigm Benchmarking Void | Need for Direct Head-to-Head Metaheuristic Comparison |
+| **4. Proposed Work** | Scientific Framework & Technical Contributions |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 4.1 Core Engineering Contributions | 8-Point Scientific Innovation Architecture |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 4.2 Bi-Objective Optimization Formulation | Minimizing Energy Cost ($f_1$) & Maximizing SLA ($f_2$) |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 4.3 Multi-Kernel Fuzzy Satisfaction Models | Trapezoidal, Gaussian & Sigmoidal Formulations |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 4.4 9-Rule Mamdani Environmental Matrix | Traffic Density & Monsoon Rain Delay Multipliers |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 4.5 Memetic Hybrid NSGA-II Solver | Heuristic Seeding, Order Crossover & 2-Opt Uncrossing |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 4.6 5-Algorithm Benchmarking Arena | NSGA-II, MOPSO, MO-ACO, Standard GA, Greedy |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 4.7 5-Seed Monte Carlo Validation | Rigorous Multi-Trial Statistical Repeatability Analysis |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 4.8 60FPS Telemetry Command Center | Interactive Vector Radar & Pareto Telematics Dashboard |
+| **5. Methodology** | End-to-End Computational Workflow & Operators |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 5.1 System Pipeline & Flowchart | 4-Stage Architectural Progression Pipeline |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 5.2 Chromosome Encoding & Partitioning | Unconstrained Permutations & Payload Split ($\le 100\text{ kg}$) |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 5.3 Multi-Kernel Fuzzification of Timelines | Mathematical Definitions & Decay Rate Curves |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 5.4 Mamdani Inference & Defuzzification | Fuzzification, Min-Norm, Max-Norm & Centroid COG |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 5.5 Evolutionary Metaheuristic Execution | Fast Non-Dominated Sorting & Crowding Distance |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 5.6 Knee-Point Multi-Criteria Selection | Normalized Euclidean Distance to Utopia Point |
+| **6. Model / Architecture / Design** | Mathematical Rigor & Structural Implementation |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 6.1 Mathematical Model & Equations | Objective Functions, Variables & Hard Constraints |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 6.2 9-Rule Mamdani Inference Matrix | Full Decision Matrix with Delay Multipliers ($\tau$) |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 6.3 Genetic Operators & Permutation Routing | Order Crossover (OX1), Inversion & 2-Opt Mechanics |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 6.4 Modular Software Architecture | Decoupled 3-Tier Layered System Architecture |
+| **7. Implementation** | Software Stack, Code Modules & Execution |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 7.1 Technology Stack & Environment | Python 3.12, NumPy, Pandas, Plotly, Streamlit |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 7.2 File-Wise Code Walkthrough | Detailed Anatomy of `core_data_and_fuzzy`, `core_optimizers`, `app` |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 7.3 Offline Launcher & Execution Pipeline | Instant 127.0.0.1 Local Loopback Batch Dispatcher |
+| **8. Results and Analysis** | Empirical Evaluation & Performance Metrics |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 8.1 Benchmark Topologies & Datasets | Amaravati Live GIS (25 Nodes), Solomon C101 & R101 |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 8.2 5-Algorithm Head-to-Head Arena | Quantitative Evaluation: Energy, SLA, Vans, Time, HV |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 8.3 Pareto Geometry & Hypervolume | Dominance Analysis & Extreme-to-Express Frontiers |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 8.4 Comparative Fuzzy Kernel Evaluation | Performance Trade-Offs: Trapezoidal, Gaussian, Sigmoidal |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 8.5 Mamdani Sensitivity Analysis | Environmental Shock Response ($\tau = 1.00\times \dots 1.85\times$) |
+| **9. Comparison with Existing Methods** | Metaheuristic Benchmark Analysis & Statistical Rigor |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 9.1 Multi-Paradigm Comparison Matrix | Evolutionary vs. Swarm vs. Colony vs. Single-Objective |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 9.2 Architectural Analysis of Superiority | Combinatorial Integrity, Diversity & Stagnation Defense |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 9.3 5-Seed Monte Carlo Stability | Mean $\pm$ Standard Deviation Analysis ($0.00$ Variance) |
+| **10. Conclusion** | Research Findings & Scientific Milestones |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 10.1 Key Findings & Milestones | Combinatorial Resolution, Load Physics & Rank #1 |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 10.2 Soft Computing Hypothesis Validation | Convergence of Fuzzy Logic & Evolutionary Algorithms |
+| **11. Scope for Future Work** | Research Extensions & Advanced Frontiers |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 11.1 Dynamic Real-Time GPS Telematics | Live Mid-Route Recalibration via WebSockets |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 11.2 Electric Vehicle Routing (EVRPTW) | Battery State-of-Charge & Fast-Charging Topologies |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 11.3 Multi-Depot & Van-Drone Collaboration | Urban Dark Stores & Aerial Package Handoffs |
+| &nbsp;&nbsp;&nbsp;&nbsp;• 11.4 DRL Surrogate Acceleration | Graph Neural Networks for Sub-Millisecond Dispatching |
+| **12. References** | Academic Citations & Base Research Bibliography |
+| &nbsp;&nbsp;&nbsp;&nbsp;• Formal IEEE Bibliography | 10 Foundational Papers, Base Studies & Textbooks |
 
 ---
 
@@ -428,9 +431,9 @@ $$\max f_2 = \frac{\sum_{i=1}^N \Big( \mu_{\text{fuzzy}}(t_i) \times w_i \Big)}{
 
 ### 6.4 Modular Software Engineering Architecture
 The system architecture decouples the problem into three independent layers:
-- **Layer 1: Core Physics & Fuzzy Data Engine (`core_data_and_fuzzy.py`):** Manages GIS coordinates, payload constraints, membership equations, and the 9-Rule Mamdani FIS.
-- **Layer 2: Multi-Objective Optimizers Engine (`core_optimizers.py`):** Implements NSGA-II, MOPSO, MO-ACO, SGA, and Greedy solvers with vectorized Pareto sorting.
-- **Layer 3: Telemetry Command Center (`app.py`):** High-frame-rate Streamlit interface rendering real-time vector radar simulations, 3D response surfaces, and Pareto plots.
+- **Layer 1: Core Physics & Fuzzy Data Engine** (`core_data_and_fuzzy.py`): Manages GIS coordinates, payload constraints, membership equations, and the 9-Rule Mamdani FIS.
+- **Layer 2: Multi-Objective Optimizers Engine** (`core_optimizers.py`): Implements NSGA-II, MOPSO, MO-ACO, SGA, and Greedy solvers with vectorized Pareto sorting.
+- **Layer 3: Telemetry Command Center** (`app.py`): High-frame-rate Streamlit interface rendering real-time vector radar simulations, 3D response surfaces, and Pareto plots.
 
 ```mermaid
 graph TD
